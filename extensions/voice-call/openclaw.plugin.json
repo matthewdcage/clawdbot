@@ -3,7 +3,7 @@
   "uiHints": {
     "provider": {
       "label": "Provider",
-      "help": "Use twilio, telnyx, or mock for dev/no-network."
+      "help": "Use twilio, telnyx, threecx, or mock for dev/no-network."
     },
     "fromNumber": {
       "label": "From Number",
@@ -40,6 +40,22 @@
     "twilio.authToken": {
       "label": "Twilio Auth Token",
       "sensitive": true
+    },
+    "threecx.server": {
+      "label": "3CX WebSocket URL",
+      "placeholder": "wss://1442.3cx.cloud:5001/ws"
+    },
+    "threecx.extension": {
+      "label": "3CX Extension Number",
+      "placeholder": "17311"
+    },
+    "threecx.password": {
+      "label": "3CX SIP Password",
+      "sensitive": true
+    },
+    "threecx.domain": {
+      "label": "3CX SIP Domain",
+      "placeholder": "1442.3cx.cloud"
     },
     "outbound.defaultMode": {
       "label": "Default Call Mode"
@@ -168,7 +184,7 @@
       },
       "provider": {
         "type": "string",
-        "enum": ["telnyx", "twilio", "plivo", "mock"]
+        "enum": ["telnyx", "twilio", "plivo", "threecx", "mock"]
       },
       "telnyx": {
         "type": "object",
@@ -206,6 +222,47 @@
           },
           "authToken": {
             "type": "string"
+          }
+        }
+      },
+      "threecx": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "server": {
+            "type": "string"
+          },
+          "extension": {
+            "type": "string"
+          },
+          "authId": {
+            "type": "string"
+          },
+          "password": {
+            "type": "string"
+          },
+          "domain": {
+            "type": "string"
+          },
+          "drachtioHost": {
+            "type": "string",
+            "default": "127.0.0.1"
+          },
+          "drachtioPort": {
+            "type": "number",
+            "default": 9022
+          },
+          "drachtioSecret": {
+            "type": "string",
+            "default": "cymru"
+          },
+          "rtpPortMin": {
+            "type": "number",
+            "default": 20000
+          },
+          "rtpPortMax": {
+            "type": "number",
+            "default": 20100
           }
         }
       },

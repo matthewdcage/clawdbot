@@ -7,6 +7,7 @@ Providers:
 - **Twilio** (Programmable Voice + Media Streams)
 - **Telnyx** (Call Control v2)
 - **Plivo** (Voice API + XML transfer + GetInput speech)
+- **ThreeCX** (Direct SIP/UDP via drachtio-srf — works with any SIP trunk provider)
 - **Mock** (dev/no network)
 
 Docs: `https://docs.openclaw.ai/plugins/voice-call`
@@ -161,8 +162,58 @@ Actions:
 - `voicecall.end` (callId)
 - `voicecall.status` (callId)
 
+## ThreeCX Provider (Direct SIP)
+
+The `threecx` provider connects directly to a SIP trunk provider (e.g. CrazyTel)
+via UDP SIP, bypassing 3CX entirely. It uses **drachtio-server** as the SIP engine.
+
+### Prerequisites
+
+1. **drachtio-server** running as a Docker container:
+
+```bash
+docker run -d --name drachtio \
+  --net=host \
+  -e DRACHTIO_SECRET=cymru \
+  drachtio/drachtio-server:latest
+```
+
+> `--net=host` is required because SIP/RTP need direct UDP network access
+> (dynamic RTP ports can't be mapped). The container is lightweight (~50MB).
+
+2. SIP trunk credentials from your provider (e.g. CrazyTel, VoIP.ms, etc.)
+
+### Config
+
+```json5
+{
+  provider: "threecx",
+  threecx: {
+    server: "sip.biz.crazytel.net.au", // SIP registrar host
+    extension: "10301626", // SIP username
+    password: "your-sip-password", // SIP password
+    domain: "sip.biz.crazytel.net.au", // SIP domain
+    // drachtio-server connection (defaults shown)
+    drachtioHost: "127.0.0.1",
+    drachtioPort: 9022,
+    drachtioSecret: "cymru",
+    // RTP port range (defaults shown)
+    rtpPortMin: 20000,
+    rtpPortMax: 20100,
+  },
+}
+```
+
+### How It Works
+
+1. drachtio-server sends SIP REGISTER to your SIP trunk provider
+2. Inbound calls arrive as SIP INVITE; OpenClaw auto-answers with G.711 audio
+3. RTP audio flows directly between Node.js and the SIP trunk
+4. Inbound G.711 is decoded to PCM and fed to STT; TTS output is encoded back to G.711
+
 ## Notes
 
 - Uses webhook signature verification for Twilio/Telnyx/Plivo.
 - `responseModel` / `responseSystemPrompt` control AI auto-responses.
 - Media streaming requires `ws` and OpenAI Realtime API key.
+- ThreeCX provider uses SIP events (not HTTP webhooks) — no public URL or tunnel needed.

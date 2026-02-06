@@ -5,7 +5,7 @@
   "type": "module",
   "dependencies": {
     "@sinclair/typebox": "0.34.48",
-    "ws": "^8.19.0",
+    "drachtio-srf": "^5.0.17",
     "zod": "^4.3.6"
   },
   "devDependencies": {

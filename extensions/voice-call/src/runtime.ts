@@ -6,6 +6,7 @@ import type { VoiceCallProvider } from "./providers/base.js";
 import { MockProvider } from "./providers/mock.js";
 import { PlivoProvider } from "./providers/plivo.js";
 import { TelnyxProvider } from "./providers/telnyx.js";
+import { ThreeCXProvider } from "./providers/threecx.js";
 import { TwilioProvider } from "./providers/twilio.js";
 import type { TelephonyTtsRuntime } from "./telephony-tts.js";
 import { createTelephonyTtsProvider } from "./telephony-tts.js";
@@ -87,6 +88,19 @@ function resolveProvider(config: VoiceCallConfig): VoiceCallProvider {
       );
     case "mock":
       return new MockProvider();
+    case "threecx":
+      return new ThreeCXProvider({
+        server: config.threecx?.server,
+        extension: config.threecx?.extension,
+        authId: config.threecx?.authId,
+        password: config.threecx?.password,
+        domain: config.threecx?.domain,
+        drachtioHost: config.threecx?.drachtioHost,
+        drachtioPort: config.threecx?.drachtioPort,
+        drachtioSecret: config.threecx?.drachtioSecret,
+        rtpPortMin: config.threecx?.rtpPortMin,
+        rtpPortMax: config.threecx?.rtpPortMax,
+      });
     default:
       throw new Error(`Unsupported voice-call provider: ${String(config.provider)}`);
   }
@@ -191,7 +205,45 @@ export async function createVoiceCallRuntime(params: {
 
   manager.initialize(provider, webhookUrl);
 
+  // For ThreeCX: connect via drachtio-srf (SIP/UDP) and wire events to CallManager.
+  // Unlike webhook-based providers, ThreeCX events come from SIP messages and
+  // must be forwarded to the manager explicitly.
+  if (provider.name === "threecx") {
+    const threecxProvider = provider as ThreeCXProvider;
+
+    // Bridge SIP events -> CallManager
+    threecxProvider.addEventListener((event) => {
+      try {
+        manager.processEvent(event);
+      } catch (err) {
+        log.error(
+          `[voice-call] Error processing 3CX event ${event.type}: ${
+            err instanceof Error ? err.message : String(err)
+          }`,
+        );
+      }
+    });
+
+    try {
+      await threecxProvider.connect();
+      log.info("[voice-call] ThreeCX SIP registration successful");
+    } catch (err) {
+      log.error(
+        `[voice-call] ThreeCX SIP registration failed: ${err instanceof Error ? err.message : String(err)}`,
+      );
+      throw err;
+    }
+  }
+
   const stop = async () => {
+    // Disconnect ThreeCX SIP registration if active
+    if (provider.name === "threecx") {
+      try {
+        await (provider as ThreeCXProvider).disconnect();
+      } catch {
+        // Best-effort cleanup
+      }
+    }
     if (tunnelResult) {
       await tunnelResult.stop();
     }

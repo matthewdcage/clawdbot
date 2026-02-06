@@ -68,6 +68,32 @@ export const PlivoConfigSchema = z
   .strict();
 export type PlivoConfig = z.infer<typeof PlivoConfigSchema>;
 
+export const ThreeCXConfigSchema = z
+  .object({
+    /** SIP registrar host (e.g. 1442.3cx.cloud) */
+    server: z.string().min(1).optional(),
+    /** SIP extension number (e.g. 17311) — used in From/To URI */
+    extension: z.string().min(1).optional(),
+    /** SIP authentication ID — if different from extension (e.g. 3CX AuthID) */
+    authId: z.string().min(1).optional(),
+    /** SIP authentication password */
+    password: z.string().min(1).optional(),
+    /** SIP domain (e.g. 1442.3cx.cloud) */
+    domain: z.string().min(1).optional(),
+    /** drachtio-server TCP host (default: 127.0.0.1) */
+    drachtioHost: z.string().default("127.0.0.1"),
+    /** drachtio-server TCP port (default: 9022) */
+    drachtioPort: z.number().default(9022),
+    /** drachtio-server shared secret (default: cymru) */
+    drachtioSecret: z.string().default("cymru"),
+    /** Minimum RTP port for media (default: 20000) */
+    rtpPortMin: z.number().default(20000),
+    /** Maximum RTP port for media (default: 20100) */
+    rtpPortMax: z.number().default(20100),
+  })
+  .strict();
+export type ThreeCXConfig = z.infer<typeof ThreeCXConfigSchema>;
+
 // -----------------------------------------------------------------------------
 // STT/TTS Configuration
 // -----------------------------------------------------------------------------
@@ -240,8 +266,8 @@ export const VoiceCallConfigSchema = z
     /** Enable voice call functionality */
     enabled: z.boolean().default(false),
 
-    /** Active provider (telnyx, twilio, plivo, or mock) */
-    provider: z.enum(["telnyx", "twilio", "plivo", "mock"]).optional(),
+    /** Active provider (telnyx, twilio, plivo, threecx, or mock) */
+    provider: z.enum(["telnyx", "twilio", "plivo", "threecx", "mock"]).optional(),
 
     /** Telnyx-specific configuration */
     telnyx: TelnyxConfigSchema.optional(),
@@ -251,6 +277,9 @@ export const VoiceCallConfigSchema = z
 
     /** Plivo-specific configuration */
     plivo: PlivoConfigSchema.optional(),
+
+    /** 3CX PBX configuration (SIP over WebSocket) */
+    threecx: ThreeCXConfigSchema.optional(),
 
     /** Phone number to call from (E.164) */
     fromNumber: E164Schema.optional(),
@@ -369,6 +398,15 @@ export function resolveVoiceCallConfig(config: VoiceCallConfig): VoiceCallConfig
     resolved.plivo.authToken = resolved.plivo.authToken ?? process.env.PLIVO_AUTH_TOKEN;
   }
 
+  // 3CX (SIP over WebSocket -- no webhooks needed)
+  if (resolved.provider === "threecx") {
+    resolved.threecx = resolved.threecx ?? {};
+    resolved.threecx.server = resolved.threecx.server ?? process.env.THREECX_SERVER;
+    resolved.threecx.extension = resolved.threecx.extension ?? process.env.THREECX_EXTENSION;
+    resolved.threecx.password = resolved.threecx.password ?? process.env.THREECX_PASSWORD;
+    resolved.threecx.domain = resolved.threecx.domain ?? process.env.THREECX_DOMAIN;
+  }
+
   // Tunnel Config
   resolved.tunnel = resolved.tunnel ?? {
     provider: "none",
@@ -410,7 +448,8 @@ export function validateProviderConfig(config: VoiceCallConfig): {
     errors.push("plugins.entries.voice-call.config.provider is required");
   }
 
-  if (!config.fromNumber && config.provider !== "mock") {
+  // 3CX uses SIP extensions instead of E.164 numbers; mock doesn't need fromNumber
+  if (!config.fromNumber && config.provider !== "mock" && config.provider !== "threecx") {
     errors.push("plugins.entries.voice-call.config.fromNumber is required");
   }
 
@@ -454,6 +493,29 @@ export function validateProviderConfig(config: VoiceCallConfig): {
     if (!config.plivo?.authToken) {
       errors.push(
         "plugins.entries.voice-call.config.plivo.authToken is required (or set PLIVO_AUTH_TOKEN env)",
+      );
+    }
+  }
+
+  if (config.provider === "threecx") {
+    if (!config.threecx?.server) {
+      errors.push(
+        "plugins.entries.voice-call.config.threecx.server is required (or set THREECX_SERVER env)",
+      );
+    }
+    if (!config.threecx?.extension) {
+      errors.push(
+        "plugins.entries.voice-call.config.threecx.extension is required (or set THREECX_EXTENSION env)",
+      );
+    }
+    if (!config.threecx?.password) {
+      errors.push(
+        "plugins.entries.voice-call.config.threecx.password is required (or set THREECX_PASSWORD env)",
+      );
+    }
+    if (!config.threecx?.domain) {
+      errors.push(
+        "plugins.entries.voice-call.config.threecx.domain is required (or set THREECX_DOMAIN env)",
       );
     }
   }
