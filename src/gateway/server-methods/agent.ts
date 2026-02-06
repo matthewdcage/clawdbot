@@ -220,8 +220,12 @@ export const agentHandlers: GatewayRequestHandlers = {
     let images: Array<{ type: "image"; data: string; mimeType: string }> = [];
     if (normalizedAttachments.length > 0) {
       try {
+        const maxBytes =
+          typeof cfg?.agents?.defaults?.mediaMaxMb === "number"
+            ? cfg.agents.defaults.mediaMaxMb * 1024 * 1024
+            : 5_000_000; // 5 MB default
         const parsed = await parseMessageWithAttachments(message, normalizedAttachments, {
-          maxBytes: 5_000_000,
+          maxBytes,
           log: context.logGateway,
         });
         message = parsed.message.trim();

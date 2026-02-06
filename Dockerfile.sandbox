@@ -2,16 +2,51 @@ FROM debian:bookworm-slim
 
 ENV DEBIAN_FRONTEND=noninteractive
 
+# Core tools + Python + Node.js + build tools + utilities
 RUN apt-get update \
   && apt-get install -y --no-install-recommends \
+    # Core
     bash \
     ca-certificates \
     curl \
     git \
     jq \
-    python3 \
     ripgrep \
+    # Python ecosystem
+    python3 \
+    python3-pip \
+    python3-venv \
+    # Node.js (Debian bookworm has Node 18)
+    nodejs \
+    npm \
+    # Build tools
+    build-essential \
+    make \
+    # Archive/compression
+    zip \
+    unzip \
+    tar \
+    gzip \
+    # Network tools
+    wget \
+    openssh-client \
+    netcat-openbsd \
+    # Process/system tools
+    procps \
+    # Database clients
+    sqlite3 \
+    # Text processing
+    less \
+    file \
   && rm -rf /var/lib/apt/lists/*
+
+# Pre-install common Python packages
+RUN pip3 install --no-cache-dir --break-system-packages \
+    requests \
+    python-dotenv
+
+# Create symlink for python command
+RUN ln -sf /usr/bin/python3 /usr/local/bin/python
 
 RUN useradd --create-home --shell /bin/bash sandbox
 USER sandbox

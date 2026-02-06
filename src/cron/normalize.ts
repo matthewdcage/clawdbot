@@ -390,6 +390,10 @@ export function normalizeCronJobInput(
   stripLegacyTopLevelFields(next);
 
   if (options.applyDefaults) {
+    // Default enabled to true if not explicitly set (required by macOS app decoder)
+    if (next.enabled === undefined) {
+      next.enabled = true;
+    }
     if (!next.wakeMode) {
       next.wakeMode = "now";
     }

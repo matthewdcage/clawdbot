@@ -42,19 +42,30 @@ const GATEWAY_ACTIONS = [
 const GatewayToolSchema = Type.Object({
   action: stringEnum(GATEWAY_ACTIONS),
   // restart
-  delayMs: Type.Optional(Type.Number()),
-  reason: Type.Optional(Type.String()),
+  delayMs: Type.Optional(Type.Number({ description: "Delay in ms before restart (default: 500)" })),
+  reason: Type.Optional(Type.String({ description: "Reason for restart (logged)" })),
   // config.get, config.schema, config.apply, update.run
-  gatewayUrl: Type.Optional(Type.String()),
-  gatewayToken: Type.Optional(Type.String()),
-  timeoutMs: Type.Optional(Type.Number()),
-  // config.apply, config.patch
-  raw: Type.Optional(Type.String()),
-  baseHash: Type.Optional(Type.String()),
+  gatewayUrl: Type.Optional(Type.String({ description: "Override gateway URL" })),
+  gatewayToken: Type.Optional(Type.String({ description: "Override gateway auth token" })),
+  timeoutMs: Type.Optional(Type.Number({ description: "Request timeout in ms" })),
+  // config.apply, config.patch: raw must be a JSON5 STRING, not an object
+  raw: Type.Optional(
+    Type.String({
+      description:
+        "JSON5 string of config to apply/patch. MUST be a string, not an object. Example: '{ agents: { defaults: { model: { primary: \"anthropic/claude-sonnet-4\" } } } }'",
+    }),
+  ),
+  baseHash: Type.Optional(
+    Type.String({
+      description: "Config hash for optimistic concurrency (auto-fetched if omitted)",
+    }),
+  ),
   // config.apply, config.patch, update.run
-  sessionKey: Type.Optional(Type.String()),
-  note: Type.Optional(Type.String()),
-  restartDelayMs: Type.Optional(Type.Number()),
+  sessionKey: Type.Optional(Type.String({ description: "Session key for restart notification" })),
+  note: Type.Optional(Type.String({ description: "Note to include in restart notification" })),
+  restartDelayMs: Type.Optional(
+    Type.Number({ description: "Delay before restart after config write (default: 500ms)" }),
+  ),
 });
 // NOTE: We intentionally avoid top-level `allOf`/`anyOf`/`oneOf` conditionals here:
 // - OpenAI rejects tool schemas that include these keywords at the *top-level*.

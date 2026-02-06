@@ -17,6 +17,7 @@ import {
 import { buildChannelSummary } from "../infra/channel-summary.js";
 import { resolveHeartbeatSummaryForAgent } from "../infra/heartbeat-runner.js";
 import { peekSystemEvents } from "../infra/system-events.js";
+import { getAllLaneStatus } from "../process/command-queue.js";
 import { parseAgentSessionKey } from "../routing/session-key.js";
 import { resolveLinkChannelContext } from "./status.link-channel.js";
 import type { HeartbeatStatus, SessionStatus, StatusSummary } from "./status.types.js";
@@ -206,6 +207,7 @@ export async function getStatusSummary(
     },
     channelSummary,
     queuedSystemEvents,
+    lanes: getAllLaneStatus(),
     sessions: {
       paths: Array.from(paths),
       count: totalSessions,

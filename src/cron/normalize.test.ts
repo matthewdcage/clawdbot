@@ -372,6 +372,21 @@ describe("normalizeCronJobCreate", () => {
     expect(delivery.mode).toBeUndefined();
     expect(delivery.to).toBe("123");
   });
+
+  it("defaults enabled to true when not specified", () => {
+    const normalized = normalizeCronJobCreate({
+      name: "no enabled field",
+      schedule: { kind: "cron", expr: "* * * * *" },
+      sessionTarget: "main",
+      wakeMode: "next-heartbeat",
+      payload: {
+        kind: "systemEvent",
+        text: "hi",
+      },
+    }) as unknown as Record<string, unknown>;
+
+    expect(normalized.enabled).toBe(true);
+  });
 });
 
 describe("normalizeCronJobPatch", () => {
