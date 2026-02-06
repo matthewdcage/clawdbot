@@ -73,7 +73,7 @@ const SAMPLES_PER_FRAME = 160;
 
 /** Bias added before mu-law encoding */
 const MULAW_BIAS = 0x84;
-const MULAW_MAX = 0x7fff;
+const _MULAW_MAX = 0x7fff;
 const MULAW_CLIP = 32635;
 
 /**
@@ -131,7 +131,7 @@ export function encodeMulaw(pcm: Buffer): Buffer {
 export function decodeMulaw(mulaw: Buffer): Buffer {
   const pcm = Buffer.alloc(mulaw.length * 2);
   for (let i = 0; i < mulaw.length; i++) {
-    const sample = mulawToLinear(mulaw[i]!);
+    const sample = mulawToLinear(mulaw[i]);
     pcm.writeInt16LE(sample, i * 2);
   }
   return pcm;
@@ -172,17 +172,23 @@ export function parseRtpPacket(packet: Buffer): {
   ssrc: number;
   payload: Buffer;
 } | null {
-  if (packet.length < RTP_HEADER_SIZE) return null;
+  if (packet.length < RTP_HEADER_SIZE) {
+    return null;
+  }
 
-  const version = (packet[0]! >> 6) & 0x03;
-  if (version !== 2) return null;
+  const version = (packet[0] >> 6) & 0x03;
+  if (version !== 2) {
+    return null;
+  }
 
-  const csrcCount = packet[0]! & 0x0f;
+  const csrcCount = packet[0] & 0x0f;
   const headerLen = RTP_HEADER_SIZE + csrcCount * 4;
-  if (packet.length < headerLen) return null;
+  if (packet.length < headerLen) {
+    return null;
+  }
 
   return {
-    payloadType: packet[1]! & 0x7f,
+    payloadType: packet[1] & 0x7f,
     sequenceNumber: packet.readUInt16BE(2),
     timestamp: packet.readUInt32BE(4),
     ssrc: packet.readUInt32BE(8),
@@ -240,8 +246,12 @@ export class ThreeCXMediaBridge extends EventEmitter {
    * Returns the local port number (for SDP generation).
    */
   async startRtp(): Promise<number> {
-    if (this.closed) throw new Error("MediaBridge is closed");
-    if (this.socket) return this.localPort;
+    if (this.closed) {
+      throw new Error("MediaBridge is closed");
+    }
+    if (this.socket) {
+      return this.localPort;
+    }
 
     this.socket = dgram.createSocket("udp4");
 
@@ -263,7 +273,9 @@ export class ThreeCXMediaBridge extends EventEmitter {
         break;
       } catch {
         // Port in use, try next
-        if (port === rtpPortMax) break;
+        if (port === rtpPortMax) {
+          break;
+        }
         // Recreate socket since bind failure can leave it in bad state
         this.socket.close();
         this.socket = dgram.createSocket("udp4");
@@ -327,14 +339,20 @@ export class ThreeCXMediaBridge extends EventEmitter {
     for (const line of sdp.split(/\r?\n/)) {
       // Connection line: c=IN IP4 <ip>
       const cMatch = line.match(/^c=IN IP4 (\S+)/);
-      if (cMatch) host = cMatch[1]!;
+      if (cMatch) {
+        host = cMatch[1]!;
+      }
 
       // Media line: m=audio <port> RTP/AVP ...
       const mMatch = line.match(/^m=audio (\d+)/);
-      if (mMatch) port = Number.parseInt(mMatch[1]!, 10);
+      if (mMatch) {
+        port = Number.parseInt(mMatch[1], 10);
+      }
     }
 
-    if (host && port) return { host, port };
+    if (host && port) {
+      return { host, port };
+    }
     return null;
   }
 
@@ -344,13 +362,19 @@ export class ThreeCXMediaBridge extends EventEmitter {
 
   /** Process an incoming RTP packet: decode G.711 -> PCM -> capture buffer. */
   private handleRtpPacket(packet: Buffer): void {
-    if (!this.capturing) return;
+    if (!this.capturing) {
+      return;
+    }
 
     const parsed = parseRtpPacket(packet);
-    if (!parsed) return;
+    if (!parsed) {
+      return;
+    }
 
     // Only handle PCMU (payload type 0)
-    if (parsed.payloadType !== PCMU_PAYLOAD_TYPE) return;
+    if (parsed.payloadType !== PCMU_PAYLOAD_TYPE) {
+      return;
+    }
 
     // Decode G.711 mu-law to PCM 16-bit LE (8kHz)
     const pcm8k = decodeMulaw(parsed.payload);
@@ -367,7 +391,9 @@ export class ThreeCXMediaBridge extends EventEmitter {
 
   /** Start capturing remote audio and emitting PCM chunks. */
   startCapture(): void {
-    if (this.capturing || this.closed) return;
+    if (this.capturing || this.closed) {
+      return;
+    }
     this.capturing = true;
 
     // Flush accumulated audio at the configured interval
@@ -380,7 +406,9 @@ export class ThreeCXMediaBridge extends EventEmitter {
 
   /** Stop capturing remote audio. */
   stopCapture(): void {
-    if (!this.capturing) return;
+    if (!this.capturing) {
+      return;
+    }
     this.capturing = false;
 
     if (this.captureInterval) {
@@ -397,7 +425,9 @@ export class ThreeCXMediaBridge extends EventEmitter {
    * Can be called externally (e.g. from tests or alternative audio sources).
    */
   pushRemoteAudio(pcm: Buffer, sampleRate: number): void {
-    if (!this.capturing || this.closed) return;
+    if (!this.capturing || this.closed) {
+      return;
+    }
 
     const resampled =
       sampleRate === this.config.captureSampleRate
@@ -409,12 +439,16 @@ export class ThreeCXMediaBridge extends EventEmitter {
 
   /** Flush accumulated capture buffer and emit an audio chunk. */
   private flushCaptureBuffer(): void {
-    if (this.captureBuffer.length === 0) return;
+    if (this.captureBuffer.length === 0) {
+      return;
+    }
 
     const combined = Buffer.concat(this.captureBuffer);
     this.captureBuffer = [];
 
-    if (combined.length === 0) return;
+    if (combined.length === 0) {
+      return;
+    }
 
     const chunk: AudioChunk = {
       pcm: combined,
@@ -437,7 +471,9 @@ export class ThreeCXMediaBridge extends EventEmitter {
    * @param sampleRate Sample rate of the input audio
    */
   async injectAudio(pcm: Buffer, sampleRate: number): Promise<void> {
-    if (this.closed) throw new Error("MediaBridge is closed");
+    if (this.closed) {
+      throw new Error("MediaBridge is closed");
+    }
     if (!this.socket || !this.remoteEndpoint) {
       this.emit("inject", { pcm, sampleRate, timestamp: Date.now() });
       return;
@@ -480,7 +516,9 @@ export class ThreeCXMediaBridge extends EventEmitter {
 
   /** Close the media bridge and release resources. */
   close(): void {
-    if (this.closed) return;
+    if (this.closed) {
+      return;
+    }
     this.closed = true;
 
     this.stopCapture();
@@ -525,10 +563,14 @@ export class ThreeCXMediaBridge extends EventEmitter {
  * Used to convert between G.711 8kHz and STT/TTS 16kHz rates.
  */
 export function resampleLinear(input: Buffer, inputRate: number, outputRate: number): Buffer {
-  if (inputRate === outputRate) return input;
+  if (inputRate === outputRate) {
+    return input;
+  }
 
   const inputSamples = Math.floor(input.length / 2);
-  if (inputSamples === 0) return Buffer.alloc(0);
+  if (inputSamples === 0) {
+    return Buffer.alloc(0);
+  }
 
   const ratio = inputRate / outputRate;
   const outputSamples = Math.floor(inputSamples / ratio);

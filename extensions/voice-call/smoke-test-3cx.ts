@@ -21,7 +21,7 @@ async function main() {
   };
 
   console.log("[smoke] Connecting to drachtio-server...");
-  srf.connect({
+  void srf.connect({
     host: cfg.drachtioHost,
     port: cfg.drachtioPort,
     secret: cfg.drachtioSecret,
@@ -49,7 +49,7 @@ async function main() {
       reject(new Error("REGISTER timeout"));
     }, 15_000);
 
-    srf.request(
+    void srf.request(
       `sip:${cfg.sipDomain}`,
       {
         method: "REGISTER",
@@ -86,7 +86,7 @@ async function main() {
           }
 
           // Unregister and disconnect
-          srf.request(
+          void srf.request(
             `sip:${cfg.sipDomain}`,
             {
               method: "REGISTER",

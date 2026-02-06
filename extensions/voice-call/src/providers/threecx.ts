@@ -21,7 +21,7 @@ import { ThreeCXMediaBridge } from "./threecx-media.js";
 export type { ThreeCXConfig };
 
 // drachtio-srf is CJS; use dynamic import for ESM compat
-type SrfModule = typeof import("drachtio-srf");
+type _SrfModule = typeof import("drachtio-srf");
 
 // -----------------------------------------------------------------------------
 // Types
@@ -96,10 +96,18 @@ export class ThreeCXProvider implements VoiceCallProvider {
   private contactHost = "localhost";
 
   constructor(config: ThreeCXConfig) {
-    if (!config.server) throw new Error("SIP server host is required");
-    if (!config.extension) throw new Error("SIP extension/username is required");
-    if (!config.password) throw new Error("SIP password is required");
-    if (!config.domain) throw new Error("SIP domain is required");
+    if (!config.server) {
+      throw new Error("SIP server host is required");
+    }
+    if (!config.extension) {
+      throw new Error("SIP extension/username is required");
+    }
+    if (!config.password) {
+      throw new Error("SIP password is required");
+    }
+    if (!config.domain) {
+      throw new Error("SIP domain is required");
+    }
 
     this.config = {
       server: config.server,
@@ -147,7 +155,9 @@ export class ThreeCXProvider implements VoiceCallProvider {
    * Must be called before any call operations.
    */
   async connect(): Promise<void> {
-    if (this.connected) return;
+    if (this.connected) {
+      return;
+    }
 
     // Dynamic import for ESM compat (drachtio-srf is CJS)
     const SrfModule = await import("drachtio-srf");
@@ -179,7 +189,7 @@ export class ThreeCXProvider implements VoiceCallProvider {
       onFn.call(srf, "connect", (err: unknown, hostPort: unknown) => {
         clearTimeout(timeout);
         if (err) {
-          reject(err instanceof Error ? err : new Error(String(err)));
+          reject(err instanceof Error ? err : new Error(JSON.stringify(err)));
           return;
         }
         this.connected = true;
@@ -189,7 +199,7 @@ export class ThreeCXProvider implements VoiceCallProvider {
 
       onFn.call(srf, "error", (err: unknown) => {
         clearTimeout(timeout);
-        reject(err instanceof Error ? err : new Error(String(err)));
+        reject(err instanceof Error ? err : new Error(JSON.stringify(err)));
       });
 
       connectFn.call(srf, {
@@ -240,7 +250,9 @@ export class ThreeCXProvider implements VoiceCallProvider {
    * Send a SIP REGISTER request to the trunk provider.
    */
   private async sendRegister(): Promise<void> {
-    if (!this.srf) throw new Error("Not connected to drachtio-server");
+    if (!this.srf) {
+      throw new Error("Not connected to drachtio-server");
+    }
 
     const srf = this.srf as Record<string, unknown>;
     // drachtio-srf request() expects: request(uri, opts, callback)
@@ -277,7 +289,7 @@ export class ThreeCXProvider implements VoiceCallProvider {
         (err: unknown, req: unknown) => {
           if (err) {
             this.registered = false;
-            return reject(err instanceof Error ? err : new Error(String(err)));
+            return reject(err instanceof Error ? err : new Error(JSON.stringify(err)));
           }
 
           const sipReq = req as {
@@ -438,7 +450,7 @@ export class ThreeCXProvider implements VoiceCallProvider {
         rtpPortMax: this.config.rtpPortMax,
       });
 
-      const localRtpPort = await mediaBridge.startRtp();
+      const _localRtpPort = await mediaBridge.startRtp();
 
       // Determine our local IP for SDP
       const localIp = getLocalIp();
@@ -492,7 +504,9 @@ export class ThreeCXProvider implements VoiceCallProvider {
         this.handleSessionEnd(session, "hangup-user");
       });
     } catch (err) {
-      console.error(`[threecx] Failed to accept inbound call: ${err}`);
+      console.error(
+        `[threecx] Failed to accept inbound call: ${err instanceof Error ? err.message : JSON.stringify(err)}`,
+      );
 
       // Try to send a rejection
       try {
@@ -508,7 +522,7 @@ export class ThreeCXProvider implements VoiceCallProvider {
         providerCallId,
         timestamp: Date.now(),
         type: "call.error",
-        error: `Accept failed: ${err instanceof Error ? err.message : String(err)}`,
+        error: `Accept failed: ${err instanceof Error ? err.message : JSON.stringify(err)}`,
       });
     }
   }
@@ -566,7 +580,7 @@ export class ThreeCXProvider implements VoiceCallProvider {
       rtpPortMax: this.config.rtpPortMax,
     });
 
-    const localRtpPort = await mediaBridge.startRtp();
+    const _localRtpPort = await mediaBridge.startRtp();
     const localIp = getLocalIp();
     const localSdp = mediaBridge.generateSdp(localIp);
 
@@ -633,7 +647,10 @@ export class ThreeCXProvider implements VoiceCallProvider {
       return { providerCallId, status: "initiated" };
     } catch (err) {
       mediaBridge.close();
-      throw new Error(`Outbound call failed: ${err instanceof Error ? err.message : String(err)}`);
+      throw new Error(
+        `Outbound call failed: ${err instanceof Error ? err.message : JSON.stringify(err)}`,
+        { cause: err },
+      );
     }
   }
 
@@ -656,7 +673,9 @@ export class ThreeCXProvider implements VoiceCallProvider {
         await new Promise<void>((resolve) => {
           dialog.destroy!({}, (err: unknown) => {
             if (err) {
-              console.error(`[threecx] Error sending BYE: ${err}`);
+              console.error(
+                `[threecx] Error sending BYE: ${err instanceof Error ? err.message : JSON.stringify(err)}`,
+              );
             }
             resolve();
           });
@@ -754,7 +773,9 @@ export class ThreeCXProvider implements VoiceCallProvider {
 function getLocalIp(): string {
   const interfaces = os.networkInterfaces();
   for (const ifaceList of Object.values(interfaces)) {
-    if (!ifaceList) continue;
+    if (!ifaceList) {
+      continue;
+    }
     for (const iface of ifaceList) {
       if (iface.family === "IPv4" && !iface.internal) {
         return iface.address;
