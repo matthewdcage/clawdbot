@@ -106,9 +106,143 @@ export class CallManager {
 
   /**
    * Speak the initial message for a call (called when media stream connects).
+   * This is used to auto-play the message passed to initiateCall.
+   * In notify mode, auto-hangup after the message is delivered.
+   *
+   * NOTE: For 3CX/FreeSWITCH, the conversation loop in runtime.ts handles the
+   * initial message via TTS. We skip this method for 3CX to avoid deleting
+   * the initialMessage before the conversation loop can use it.
    */
   async speakInitialMessage(providerCallId: string): Promise<void> {
-    return speakInitialMessageWithContext(this.getContext(), providerCallId);
+    // 3CX uses the conversation loop for TTS — don't interfere here.
+    if (this.provider?.name === "threecx") {
+      console.log(
+        `[voice-call] speakInitialMessage: skipping for 3CX (conversation loop handles TTS)`,
+      );
+      return;
+    }
+
+    const call = this.getCallByProviderCallId(providerCallId);
+    if (!call) {
+      console.warn(`[voice-call] speakInitialMessage: no call found for ${providerCallId}`);
+      return;
+    }
+
+    const initialMessage = call.metadata?.initialMessage as string | undefined;
+    const mode = (call.metadata?.mode as CallMode) ?? "conversation";
+
+    if (!initialMessage) {
+      console.log(`[voice-call] speakInitialMessage: no initial message for ${call.callId}`);
+      return;
+    }
+
+    // Clear the initial message so we don't speak it again
+    if (call.metadata) {
+      delete call.metadata.initialMessage;
+      this.persistCallRecord(call);
+    }
+
+    console.log(`[voice-call] Speaking initial message for call ${call.callId} (mode: ${mode})`);
+    const result = await this.speak(call.callId, initialMessage);
+    if (!result.success) {
+      console.warn(`[voice-call] Failed to speak initial message: ${result.error}`);
+      return;
+    }
+
+    // In notify mode, auto-hangup after delay
+    if (mode === "notify") {
+      const delaySec = this.config.outbound.notifyHangupDelaySec;
+      console.log(`[voice-call] Notify mode: auto-hangup in ${delaySec}s for call ${call.callId}`);
+      setTimeout(async () => {
+        const currentCall = this.getCall(call.callId);
+        if (currentCall && !TerminalStates.has(currentCall.state)) {
+          console.log(`[voice-call] Notify mode: hanging up call ${call.callId}`);
+          await this.endCall(call.callId);
+        }
+      }, delaySec * 1000);
+    }
+  }
+
+  /**
+   * Start max duration timer for a call.
+   * Auto-hangup when maxDurationSeconds is reached.
+   */
+  private startMaxDurationTimer(callId: CallId): void {
+    // Clear any existing timer
+    this.clearMaxDurationTimer(callId);
+
+    const maxDurationMs = this.config.maxDurationSeconds * 1000;
+    console.log(
+      `[voice-call] Starting max duration timer (${this.config.maxDurationSeconds}s) for call ${callId}`,
+    );
+
+    const timer = setTimeout(async () => {
+      this.maxDurationTimers.delete(callId);
+      const call = this.getCall(callId);
+      if (call && !TerminalStates.has(call.state)) {
+        console.log(
+          `[voice-call] Max duration reached (${this.config.maxDurationSeconds}s), ending call ${callId}`,
+        );
+        call.endReason = "timeout";
+        this.persistCallRecord(call);
+        await this.endCall(callId);
+      }
+    }, maxDurationMs);
+
+    this.maxDurationTimers.set(callId, timer);
+  }
+
+  /**
+   * Clear max duration timer for a call.
+   */
+  private clearMaxDurationTimer(callId: CallId): void {
+    const timer = this.maxDurationTimers.get(callId);
+    if (timer) {
+      clearTimeout(timer);
+      this.maxDurationTimers.delete(callId);
+    }
+  }
+
+  private clearTranscriptWaiter(callId: CallId): void {
+    const waiter = this.transcriptWaiters.get(callId);
+    if (!waiter) {
+      return;
+    }
+    clearTimeout(waiter.timeout);
+    this.transcriptWaiters.delete(callId);
+  }
+
+  private rejectTranscriptWaiter(callId: CallId, reason: string): void {
+    const waiter = this.transcriptWaiters.get(callId);
+    if (!waiter) {
+      return;
+    }
+    this.clearTranscriptWaiter(callId);
+    waiter.reject(new Error(reason));
+  }
+
+  private resolveTranscriptWaiter(callId: CallId, transcript: string): void {
+    const waiter = this.transcriptWaiters.get(callId);
+    if (!waiter) {
+      return;
+    }
+    this.clearTranscriptWaiter(callId);
+    waiter.resolve(transcript);
+  }
+
+  private waitForFinalTranscript(callId: CallId): Promise<string> {
+    // Only allow one in-flight waiter per call.
+    this.rejectTranscriptWaiter(callId, "Transcript waiter replaced");
+
+    const timeoutMs = this.config.transcriptTimeoutMs;
+    return new Promise((resolve, reject) => {
+      const timeout = setTimeout(() => {
+        this.transcriptWaiters.delete(callId);
+        reject(new Error(`Timed out waiting for transcript after ${timeoutMs}ms`));
+      }, timeoutMs);
+
+      this.transcriptWaiters.set(callId, { resolve, reject, timeout });
+    });
   }
 
   /**
