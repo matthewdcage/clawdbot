@@ -724,12 +724,14 @@ function resolveCustomVoiceMode(
  * Clone voices  → POST /v1/tts/clone (multipart) or /v1/tts/clone/stream (multipart)
  *
  * Returns raw WAV bytes (PCM 16-bit, 48kHz mono by default from Voice Studio).
+ * Set telephony=true to request mulaw8k format (8kHz G.711 mu-law) directly from server.
  */
 export async function customTTS(params: {
   text: string;
   config: CustomTtsConfig;
-}): Promise<{ audioBuffer: Buffer; sampleRate: number }> {
-  const { text, config } = params;
+  telephony?: boolean;
+}): Promise<{ audioBuffer: Buffer; sampleRate: number; format?: "wav" | "mulaw" }> {
+  const { text, config, telephony } = params;
   const mode = resolveCustomVoiceMode(config.voice, config.voiceMode);
   const base = config.baseUrl.replace(/\/+$/, "");
 
@@ -783,6 +785,10 @@ export async function customTTS(params: {
       if (config.streaming) {
         body.streaming_interval = 1.5;
       }
+      // Request telephony format (mu-law 8kHz) for voice calls
+      if (telephony) {
+        body.format = "mulaw8k";
+      }
       headers["Content-Type"] = "application/json";
 
       response = await fetch(endpoint, {
@@ -808,6 +814,11 @@ export async function customTTS(params: {
 
     const audioBuffer = Buffer.from(await response.arrayBuffer());
 
+    // For telephony format, server returns raw mu-law at 8kHz (no WAV header)
+    if (telephony) {
+      return { audioBuffer, sampleRate: 8000, format: "mulaw" as const };
+    }
+
     // Parse sample rate from WAV header if present (bytes 24-27, little-endian uint32).
     // Falls back to 48000 which is the Voice Studio default output sample rate.
     let sampleRate = 48000;
@@ -815,7 +826,7 @@ export async function customTTS(params: {
       sampleRate = audioBuffer.readUInt32LE(24);
     }
 
-    return { audioBuffer, sampleRate };
+    return { audioBuffer, sampleRate, format: "wav" as const };
   } finally {
     clearTimeout(timeout);
   }

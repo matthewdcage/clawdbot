@@ -793,18 +793,32 @@ export async function textToSpeechTelephony(params: {
           continue;
         }
         console.error(
-          `[tts-telephony] CALLING customTTS: baseUrl=${config.custom.baseUrl} voice=${config.custom.voice}`,
+          `[tts-telephony] CALLING customTTS: baseUrl=${config.custom.baseUrl} voice=${config.custom.voice} telephony=true`,
         );
-        // Custom TTS returns WAV (PCM 16-bit). Strip the header for telephony.
+        // Request mu-law 8kHz directly from server (proper anti-aliased resampling)
         const result = await customTTS({
           text: params.text,
           config: config.custom,
+          telephony: true,
         });
-        const pcmBuffer = stripWavHeader(result.audioBuffer);
         console.error(
-          `[tts-telephony] customTTS OK: ${result.audioBuffer.length} bytes, sampleRate=${result.sampleRate}`,
+          `[tts-telephony] customTTS OK: ${result.audioBuffer.length} bytes, format=${result.format}, sampleRate=${result.sampleRate}`,
         );
 
+        // Server returns raw mu-law, no conversion needed
+        if (result.format === "mulaw") {
+          return {
+            success: true,
+            audioBuffer: result.audioBuffer,
+            latencyMs: Date.now() - providerStart,
+            provider,
+            outputFormat: "mulaw",
+            sampleRate: 8000,
+          };
+        }
+
+        // Fallback: strip WAV header if server returned WAV (shouldn't happen)
+        const pcmBuffer = stripWavHeader(result.audioBuffer);
         return {
           success: true,
           audioBuffer: pcmBuffer,
