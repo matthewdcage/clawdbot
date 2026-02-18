@@ -108,7 +108,14 @@ export type InputFetchResult = {
   contentType?: string;
 };
 
-export const DEFAULT_INPUT_IMAGE_MIMES = ["image/jpeg", "image/png", "image/gif", "image/webp"];
+export const DEFAULT_INPUT_IMAGE_MIMES = [
+  "image/jpeg",
+  "image/png",
+  "image/gif",
+  "image/webp",
+  "image/heic",
+  "image/heif",
+];
 export const DEFAULT_INPUT_FILE_MIMES = [
   "text/plain",
   "text/markdown",
@@ -117,7 +124,7 @@ export const DEFAULT_INPUT_FILE_MIMES = [
   "application/json",
   "application/pdf",
 ];
-export const DEFAULT_INPUT_IMAGE_MAX_BYTES = 10 * 1024 * 1024;
+export const DEFAULT_INPUT_IMAGE_MAX_BYTES = 20 * 1024 * 1024;
 export const DEFAULT_INPUT_FILE_MAX_BYTES = 5 * 1024 * 1024;
 export const DEFAULT_INPUT_FILE_MAX_CHARS = 200_000;
 export const DEFAULT_INPUT_MAX_REDIRECTS = 3;

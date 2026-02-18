@@ -12,3 +12,4 @@ export {
   saveSessionStore,
   resolveSessionFilePath,
 } from "./config/sessions.ts";
+export { registerAgentRunContext, emitAgentEvent } from "./infra/agent-events.ts";

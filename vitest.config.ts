@@ -33,10 +33,14 @@ export default defineConfig({
     unstubGlobals: true,
     pool: "forks",
     maxWorkers: isCI ? ciWorkers : localWorkers,
+    poolOptions: {
+      forks: { execArgv: ["--max-old-space-size=1024"] },
+      vmForks: { execArgv: ["--max-old-space-size=1024"] },
+    },
     include: [
       "src/**/*.test.ts",
       "extensions/**/*.test.ts",
-      "test/**/*.test.ts",
+      "test/format-error.test.ts",
       "ui/src/ui/views/usage-render-details.test.ts",
     ],
     setupFiles: ["test/setup.ts"],

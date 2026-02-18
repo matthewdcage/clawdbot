@@ -543,30 +543,6 @@ export async function statusCommand(
     }
   }
 
-  // Show queue/lane status if any lanes have active or queued tasks
-  const activeLanes = summary.lanes.filter((l) => l.active > 0 || l.queued > 0);
-  if (activeLanes.length > 0) {
-    runtime.log("");
-    runtime.log(theme.heading("Queue"));
-    runtime.log(
-      renderTable({
-        width: tableWidth,
-        columns: [
-          { key: "Lane", header: "Lane", minWidth: 12 },
-          { key: "Active", header: "Active", minWidth: 8 },
-          { key: "Queued", header: "Queued", minWidth: 8 },
-          { key: "Max", header: "Max", minWidth: 6 },
-        ],
-        rows: activeLanes.map((lane) => ({
-          Lane: lane.lane,
-          Active: String(lane.active),
-          Queued: String(lane.queued),
-          Max: String(lane.maxConcurrent),
-        })),
-      }).trimEnd(),
-    );
-  }
-
   if (health) {
     runtime.log("");
     runtime.log(theme.heading("Health"));

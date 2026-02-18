@@ -96,6 +96,17 @@ const MOONSHOT_DEFAULT_COST = {
   cacheWrite: 0,
 };
 
+const NVIDIA_BASE_URL = "https://integrate.api.nvidia.com/v1";
+const NVIDIA_DEFAULT_MODEL_ID = "moonshotai/kimi-k2.5";
+const NVIDIA_DEFAULT_CONTEXT_WINDOW = 256000;
+const NVIDIA_DEFAULT_MAX_TOKENS = 16384;
+const NVIDIA_DEFAULT_COST = {
+  input: 0,
+  output: 0,
+  cacheRead: 0,
+  cacheWrite: 0,
+};
+
 const QWEN_PORTAL_BASE_URL = "https://portal.qwen.ai/v1";
 const QWEN_PORTAL_OAUTH_PLACEHOLDER = "qwen-oauth";
 const QWEN_PORTAL_DEFAULT_CONTEXT_WINDOW = 128000;
@@ -133,17 +144,6 @@ export const QIANFAN_DEFAULT_MODEL_ID = "deepseek-v3.2";
 const QIANFAN_DEFAULT_CONTEXT_WINDOW = 98304;
 const QIANFAN_DEFAULT_MAX_TOKENS = 32768;
 const QIANFAN_DEFAULT_COST = {
-  input: 0,
-  output: 0,
-  cacheRead: 0,
-  cacheWrite: 0,
-};
-
-const NVIDIA_BASE_URL = "https://integrate.api.nvidia.com/v1";
-const NVIDIA_DEFAULT_MODEL_ID = "nvidia/llama-3.1-nemotron-70b-instruct";
-const NVIDIA_DEFAULT_CONTEXT_WINDOW = 131072;
-const NVIDIA_DEFAULT_MAX_TOKENS = 4096;
-const NVIDIA_DEFAULT_COST = {
   input: 0,
   output: 0,
   cacheRead: 0,
@@ -473,11 +473,29 @@ function buildMoonshotProvider(): ProviderConfig {
       {
         id: MOONSHOT_DEFAULT_MODEL_ID,
         name: "Kimi K2.5",
-        reasoning: false,
-        input: ["text"],
+        reasoning: true, // Supports thinking mode
+        input: ["text", "image"],
         cost: MOONSHOT_DEFAULT_COST,
         contextWindow: MOONSHOT_DEFAULT_CONTEXT_WINDOW,
         maxTokens: MOONSHOT_DEFAULT_MAX_TOKENS,
+      },
+    ],
+  };
+}
+
+function buildNvidiaProvider(): ProviderConfig {
+  return {
+    baseUrl: NVIDIA_BASE_URL,
+    api: "openai-completions",
+    models: [
+      {
+        id: NVIDIA_DEFAULT_MODEL_ID,
+        name: "NVIDIA Kimi K2.5",
+        reasoning: true, // Supports thinking mode via chat_template_kwargs
+        input: ["text", "image"],
+        cost: NVIDIA_DEFAULT_COST,
+        contextWindow: NVIDIA_DEFAULT_CONTEXT_WINDOW,
+        maxTokens: NVIDIA_DEFAULT_MAX_TOKENS,
       },
     ],
   };
@@ -620,42 +638,6 @@ export function buildQianfanProvider(): ProviderConfig {
   };
 }
 
-export function buildNvidiaProvider(): ProviderConfig {
-  return {
-    baseUrl: NVIDIA_BASE_URL,
-    api: "openai-completions",
-    models: [
-      {
-        id: NVIDIA_DEFAULT_MODEL_ID,
-        name: "NVIDIA Llama 3.1 Nemotron 70B Instruct",
-        reasoning: false,
-        input: ["text"],
-        cost: NVIDIA_DEFAULT_COST,
-        contextWindow: NVIDIA_DEFAULT_CONTEXT_WINDOW,
-        maxTokens: NVIDIA_DEFAULT_MAX_TOKENS,
-      },
-      {
-        id: "meta/llama-3.3-70b-instruct",
-        name: "Meta Llama 3.3 70B Instruct",
-        reasoning: false,
-        input: ["text"],
-        cost: NVIDIA_DEFAULT_COST,
-        contextWindow: 131072,
-        maxTokens: 4096,
-      },
-      {
-        id: "nvidia/mistral-nemo-minitron-8b-8k-instruct",
-        name: "NVIDIA Mistral NeMo Minitron 8B Instruct",
-        reasoning: false,
-        input: ["text"],
-        cost: NVIDIA_DEFAULT_COST,
-        contextWindow: 8192,
-        maxTokens: 2048,
-      },
-    ],
-  };
-}
-
 export async function resolveImplicitProviders(params: {
   agentDir: string;
   explicitProviders?: Record<string, ProviderConfig> | null;
@@ -685,6 +667,13 @@ export async function resolveImplicitProviders(params: {
     resolveApiKeyFromProfiles({ provider: "moonshot", store: authStore });
   if (moonshotKey) {
     providers.moonshot = { ...buildMoonshotProvider(), apiKey: moonshotKey };
+  }
+
+  const nvidiaKey =
+    resolveEnvApiKeyVarName("nvidia") ??
+    resolveApiKeyFromProfiles({ provider: "nvidia", store: authStore });
+  if (nvidiaKey) {
+    providers.nvidia = { ...buildNvidiaProvider(), apiKey: nvidiaKey };
   }
 
   const syntheticKey =
@@ -798,13 +787,6 @@ export async function resolveImplicitProviders(params: {
     resolveApiKeyFromProfiles({ provider: "qianfan", store: authStore });
   if (qianfanKey) {
     providers.qianfan = { ...buildQianfanProvider(), apiKey: qianfanKey };
-  }
-
-  const nvidiaKey =
-    resolveEnvApiKeyVarName("nvidia") ??
-    resolveApiKeyFromProfiles({ provider: "nvidia", store: authStore });
-  if (nvidiaKey) {
-    providers.nvidia = { ...buildNvidiaProvider(), apiKey: nvidiaKey };
   }
 
   return providers;

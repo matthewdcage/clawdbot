@@ -147,7 +147,19 @@ export async function handleToolExecutionStart(
   toolStartData.set(toolCallId, { startTime: Date.now(), args });
 
   if (toolName === "read") {
-    const record = args && typeof args === "object" ? (args as Record<string, unknown>) : {};
+    let record: Record<string, unknown> =
+      args && typeof args === "object" ? (args as Record<string, unknown>) : {};
+    // Some providers pass args as a JSON string instead of an object; try to recover.
+    if (typeof args === "string") {
+      try {
+        const parsed: unknown = JSON.parse(args);
+        if (parsed && typeof parsed === "object") {
+          record = parsed as Record<string, unknown>;
+        }
+      } catch {
+        // Not valid JSON — fall through to the warning below.
+      }
+    }
     const filePathValue =
       typeof record.path === "string"
         ? record.path

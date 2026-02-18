@@ -31,13 +31,6 @@ export type HeartbeatStatus = {
   everyMs: number | null;
 };
 
-export type LaneStatusEntry = {
-  lane: string;
-  active: number;
-  queued: number;
-  maxConcurrent: number;
-};
-
 export type StatusSummary = {
   linkChannel?: {
     id: ChannelId;
@@ -51,7 +44,6 @@ export type StatusSummary = {
   };
   channelSummary: string[];
   queuedSystemEvents: string[];
-  lanes: LaneStatusEntry[];
   sessions: {
     paths: string[];
     count: number;

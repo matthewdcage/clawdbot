@@ -66,6 +66,26 @@ type SubsystemLogger = ReturnType<typeof createSubsystemLogger>;
 
 const DEVICE_SIGNATURE_SKEW_MS = 10 * 60 * 1000;
 
+// ---------------------------------------------------------------------------
+// Rate-limit repeated unauthorized-connection log messages from the same remote
+// address.  After AUTH_REJECT_LOG_BURST warnings within AUTH_REJECT_LOG_WINDOW_MS,
+// further rejections are logged at debug level until the window resets.
+// ---------------------------------------------------------------------------
+const AUTH_REJECT_LOG_BURST = 3;
+const AUTH_REJECT_LOG_WINDOW_MS = 60_000;
+const authRejectLog = new Map<string, { count: number; resetAt: number }>();
+
+function shouldWarnAuthReject(remoteAddr: string | undefined): boolean {
+  const key = remoteAddr ?? "unknown";
+  const now = Date.now();
+  let entry = authRejectLog.get(key);
+  if (!entry || now >= entry.resetAt) {
+    entry = { count: 0, resetAt: now + AUTH_REJECT_LOG_WINDOW_MS };
+    authRejectLog.set(key, entry);
+  }
+  entry.count += 1;
+  return entry.count <= AUTH_REJECT_LOG_BURST;
+}
 export function attachGatewayWsMessageHandler(params: {
   socket: WebSocket;
   upgradeReq: IncomingMessage;
