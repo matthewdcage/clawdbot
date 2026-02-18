@@ -3,11 +3,11 @@
  * Also includes Search Console and Indexing API clients
  */
 
-import { BetaAnalyticsDataClient } from '@google-analytics/data';
-import { searchconsole } from '@googleapis/searchconsole';
-import { indexing } from '@googleapis/indexing';
-import { google } from 'googleapis';
-import { getSettings, validateSettings } from '../config/settings.js';
+import { BetaAnalyticsDataClient } from "@google-analytics/data";
+import { indexing } from "@googleapis/indexing";
+import { searchconsole } from "@googleapis/searchconsole";
+import { google } from "googleapis";
+import { getSettings, validateSettings } from "../config/settings.js";
 
 // Singleton client instances
 let clientInstance: BetaAnalyticsDataClient | null = null;
@@ -27,7 +27,7 @@ export function getClient(): BetaAnalyticsDataClient {
 
   const validation = validateSettings();
   if (!validation.valid) {
-    throw new Error(`Invalid GA4 credentials: ${validation.errors.join(', ')}`);
+    throw new Error(`Invalid GA4 credentials: ${validation.errors.join(", ")}`);
   }
 
   const settings = getSettings();
@@ -72,8 +72,8 @@ function getGoogleAuth() {
       private_key: settings.privateKey,
     },
     scopes: [
-      'https://www.googleapis.com/auth/webmasters.readonly',
-      'https://www.googleapis.com/auth/indexing',
+      "https://www.googleapis.com/auth/webmasters.readonly",
+      "https://www.googleapis.com/auth/indexing",
     ],
   });
 }
@@ -91,11 +91,11 @@ export function getSearchConsoleClient(): ReturnType<typeof searchconsole> {
 
   const validation = validateSettings();
   if (!validation.valid) {
-    throw new Error(`Invalid credentials: ${validation.errors.join(', ')}`);
+    throw new Error(`Invalid credentials: ${validation.errors.join(", ")}`);
   }
 
   const auth = getGoogleAuth();
-  searchConsoleClientInstance = searchconsole({ version: 'v1', auth });
+  searchConsoleClientInstance = searchconsole({ version: "v1", auth });
 
   return searchConsoleClientInstance;
 }
@@ -113,11 +113,11 @@ export function getIndexingClient(): ReturnType<typeof indexing> {
 
   const validation = validateSettings();
   if (!validation.valid) {
-    throw new Error(`Invalid credentials: ${validation.errors.join(', ')}`);
+    throw new Error(`Invalid credentials: ${validation.errors.join(", ")}`);
   }
 
   const auth = getGoogleAuth();
-  indexingClientInstance = indexing({ version: 'v3', auth });
+  indexingClientInstance = indexing({ version: "v3", auth });
 
   return indexingClientInstance;
 }

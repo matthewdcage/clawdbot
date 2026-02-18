@@ -97,7 +97,13 @@ async function main() {
     .filter((t) => {
       const txt = (t.text || "").toLowerCase();
       const au = (t.author?.username || "").toLowerCase();
-      return txt.includes("clawdbot") || txt.includes("moltbot") || au.includes("clawdbot") || au.includes("moltbot") || au.includes("steipete");
+      return (
+        txt.includes("clawdbot") ||
+        txt.includes("moltbot") ||
+        au.includes("clawdbot") ||
+        au.includes("moltbot") ||
+        au.includes("steipete")
+      );
     })
     .sort((a, b) => score(b) - score(a))
     .slice(0, 10)

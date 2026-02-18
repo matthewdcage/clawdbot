@@ -2,8 +2,8 @@
  * Indexing API - Request re-indexing and URL inspection
  */
 
-import { getIndexingClient, getSearchConsoleClient, getSiteUrl } from '../core/client.js';
-import { saveResult } from '../core/storage.js';
+import { getIndexingClient, getSearchConsoleClient, getSiteUrl } from "../core/client.js";
+import { saveResult } from "../core/storage.js";
 
 /**
  * Indexing request options
@@ -17,7 +17,7 @@ export interface IndexingOptions {
  */
 export interface UrlNotificationResult {
   url: string;
-  type: 'URL_UPDATED' | 'URL_DELETED';
+  type: "URL_UPDATED" | "URL_DELETED";
   notifyTime: string;
 }
 
@@ -27,7 +27,7 @@ export interface UrlNotificationResult {
 export interface UrlInspectionResult {
   inspectionResultLink?: string;
   indexStatus: {
-    verdict: 'PASS' | 'FAIL' | 'NEUTRAL';
+    verdict: "PASS" | "FAIL" | "NEUTRAL";
     coverageState: string;
     robotsTxtState?: string;
     indexingState?: string;
@@ -54,7 +54,10 @@ export interface UrlInspectionResult {
  * @param options - Optional settings (save to file, etc.)
  * @returns Notification result with timestamp
  */
-export async function requestIndexing(url: string, options: IndexingOptions = {}): Promise<UrlNotificationResult> {
+export async function requestIndexing(
+  url: string,
+  options: IndexingOptions = {},
+): Promise<UrlNotificationResult> {
   const { save = true } = options;
 
   const client = getIndexingClient();
@@ -62,18 +65,19 @@ export async function requestIndexing(url: string, options: IndexingOptions = {}
   const response = await client.urlNotifications.publish({
     requestBody: {
       url,
-      type: 'URL_UPDATED',
+      type: "URL_UPDATED",
     },
   });
 
   const result: UrlNotificationResult = {
     url: response.data.urlNotificationMetadata?.url || url,
-    type: 'URL_UPDATED',
-    notifyTime: response.data.urlNotificationMetadata?.latestUpdate?.notifyTime || new Date().toISOString(),
+    type: "URL_UPDATED",
+    notifyTime:
+      response.data.urlNotificationMetadata?.latestUpdate?.notifyTime || new Date().toISOString(),
   };
 
   if (save) {
-    saveResult(result, 'indexing', 'request_indexing');
+    saveResult(result, "indexing", "request_indexing");
   }
 
   return result;
@@ -86,7 +90,10 @@ export async function requestIndexing(url: string, options: IndexingOptions = {}
  * @param options - Optional settings
  * @returns Array of notification results
  */
-export async function requestIndexingBatch(urls: string[], options: IndexingOptions = {}): Promise<UrlNotificationResult[]> {
+export async function requestIndexingBatch(
+  urls: string[],
+  options: IndexingOptions = {},
+): Promise<UrlNotificationResult[]> {
   const { save = true } = options;
 
   const results: UrlNotificationResult[] = [];
@@ -98,7 +105,7 @@ export async function requestIndexingBatch(urls: string[], options: IndexingOpti
   }
 
   if (save) {
-    saveResult(results, 'indexing', 'batch_indexing');
+    saveResult(results, "indexing", "batch_indexing");
   }
 
   return results;
@@ -111,7 +118,10 @@ export async function requestIndexingBatch(urls: string[], options: IndexingOpti
  * @param options - Optional settings
  * @returns Notification result
  */
-export async function removeFromIndex(url: string, options: IndexingOptions = {}): Promise<UrlNotificationResult> {
+export async function removeFromIndex(
+  url: string,
+  options: IndexingOptions = {},
+): Promise<UrlNotificationResult> {
   const { save = true } = options;
 
   const client = getIndexingClient();
@@ -119,18 +129,19 @@ export async function removeFromIndex(url: string, options: IndexingOptions = {}
   const response = await client.urlNotifications.publish({
     requestBody: {
       url,
-      type: 'URL_DELETED',
+      type: "URL_DELETED",
     },
   });
 
   const result: UrlNotificationResult = {
     url: response.data.urlNotificationMetadata?.url || url,
-    type: 'URL_DELETED',
-    notifyTime: response.data.urlNotificationMetadata?.latestRemove?.notifyTime || new Date().toISOString(),
+    type: "URL_DELETED",
+    notifyTime:
+      response.data.urlNotificationMetadata?.latestRemove?.notifyTime || new Date().toISOString(),
   };
 
   if (save) {
-    saveResult(result, 'indexing', 'remove_from_index');
+    saveResult(result, "indexing", "remove_from_index");
   }
 
   return result;
@@ -143,7 +154,10 @@ export async function removeFromIndex(url: string, options: IndexingOptions = {}
  * @param options - Optional settings
  * @returns URL inspection result with index status
  */
-export async function inspectUrl(url: string, options: IndexingOptions = {}): Promise<UrlInspectionResult> {
+export async function inspectUrl(
+  url: string,
+  options: IndexingOptions = {},
+): Promise<UrlInspectionResult> {
   const { save = true } = options;
 
   const client = getSearchConsoleClient();
@@ -161,8 +175,9 @@ export async function inspectUrl(url: string, options: IndexingOptions = {}): Pr
   const result: UrlInspectionResult = {
     inspectionResultLink: inspectionResult?.inspectionResultLink || undefined,
     indexStatus: {
-      verdict: (inspectionResult?.indexStatusResult?.verdict as 'PASS' | 'FAIL' | 'NEUTRAL') || 'NEUTRAL',
-      coverageState: inspectionResult?.indexStatusResult?.coverageState || 'Unknown',
+      verdict:
+        (inspectionResult?.indexStatusResult?.verdict as "PASS" | "FAIL" | "NEUTRAL") || "NEUTRAL",
+      coverageState: inspectionResult?.indexStatusResult?.coverageState || "Unknown",
       robotsTxtState: inspectionResult?.indexStatusResult?.robotsTxtState || undefined,
       indexingState: inspectionResult?.indexStatusResult?.indexingState || undefined,
       lastCrawlTime: inspectionResult?.indexStatusResult?.lastCrawlTime || undefined,
@@ -173,20 +188,20 @@ export async function inspectUrl(url: string, options: IndexingOptions = {}): Pr
     },
     mobileUsability: inspectionResult?.mobileUsabilityResult
       ? {
-          verdict: inspectionResult.mobileUsabilityResult.verdict || 'NEUTRAL',
+          verdict: inspectionResult.mobileUsabilityResult.verdict || "NEUTRAL",
           issues: inspectionResult.mobileUsabilityResult.issues || [],
         }
       : undefined,
     richResults: inspectionResult?.richResultsResult
       ? {
-          verdict: inspectionResult.richResultsResult.verdict || 'NEUTRAL',
+          verdict: inspectionResult.richResultsResult.verdict || "NEUTRAL",
           detectedItems: inspectionResult.richResultsResult.detectedItems || [],
         }
       : undefined,
   };
 
   if (save) {
-    saveResult(result, 'indexing', 'url_inspection');
+    saveResult(result, "indexing", "url_inspection");
   }
 
   return result;

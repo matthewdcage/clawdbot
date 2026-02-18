@@ -1,7 +1,15 @@
 ---
 name: microsoft-ads-mcp
 description: Create and manage Microsoft Advertising campaigns (Bing Ads / DuckDuckGo Ads) via MCP server - campaigns, ad groups, keywords, ads, and reporting
-metadata: {"clawdbot":{"emoji":"📢","requires":{"commands":["mcporter"]},"homepage":"https://github.com/Duartemartins/microsoft-ads-mcp-server"}}
+metadata:
+  {
+    "clawdbot":
+      {
+        "emoji": "📢",
+        "requires": { "commands": ["mcporter"] },
+        "homepage": "https://github.com/Duartemartins/microsoft-ads-mcp-server",
+      },
+  }
 ---
 
 # Microsoft Ads MCP Server
@@ -62,11 +70,13 @@ mcporter call microsoft-ads.complete_auth '{"redirect_url": "https://login.micro
 ## Available Tools
 
 ### Account Management
+
 ```bash
 mcporter call microsoft-ads.search_accounts
 ```
 
 ### Campaign Operations
+
 ```bash
 # List campaigns
 mcporter call microsoft-ads.get_campaigns
@@ -79,6 +89,7 @@ mcporter call microsoft-ads.update_campaign_status '{"campaign_id": 123456, "sta
 ```
 
 ### Ad Groups
+
 ```bash
 # List ad groups
 mcporter call microsoft-ads.get_ad_groups '{"campaign_id": 123456}'
@@ -88,6 +99,7 @@ mcporter call microsoft-ads.create_ad_group '{"campaign_id": 123456, "name": "Pr
 ```
 
 ### Keywords
+
 ```bash
 # List keywords
 mcporter call microsoft-ads.get_keywords '{"ad_group_id": 789012}'
@@ -97,6 +109,7 @@ mcporter call microsoft-ads.add_keywords '{"ad_group_id": 789012, "keywords": "b
 ```
 
 ### Ads
+
 ```bash
 # List ads
 mcporter call microsoft-ads.get_ads '{"ad_group_id": 789012}'
@@ -111,6 +124,7 @@ mcporter call microsoft-ads.create_responsive_search_ad '{
 ```
 
 ### Reporting
+
 ```bash
 # Submit report request
 mcporter call microsoft-ads.submit_campaign_performance_report '{"date_range": "LastWeek"}'
@@ -123,6 +137,7 @@ mcporter call microsoft-ads.poll_report_status
 ```
 
 ### Other
+
 ```bash
 mcporter call microsoft-ads.get_budgets
 mcporter call microsoft-ads.get_labels
@@ -168,11 +183,11 @@ mcporter call microsoft-ads.poll_report_status
 
 ## Match Types
 
-| Type | Syntax | Triggers |
-|------|--------|----------|
-| Broad | `keyword` | Related searches, synonyms |
-| Phrase | `"keyword"` | Contains phrase in order |
-| Exact | `[keyword]` | Exact match only |
+| Type   | Syntax      | Triggers                   |
+| ------ | ----------- | -------------------------- |
+| Broad  | `keyword`   | Related searches, synonyms |
+| Phrase | `"keyword"` | Contains phrase in order   |
+| Exact  | `[keyword]` | Exact match only           |
 
 ## Report Columns
 

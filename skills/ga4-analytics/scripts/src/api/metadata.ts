@@ -2,8 +2,8 @@
  * Metadata API - Available dimensions and metrics
  */
 
-import { getClient, getPropertyId } from '../core/client.js';
-import { saveResult } from '../core/storage.js';
+import { getClient, getPropertyId } from "../core/client.js";
+import { saveResult } from "../core/storage.js";
 
 /**
  * Dimension metadata
@@ -48,7 +48,7 @@ export async function getAvailableDimensions(save = true): Promise<MetadataRespo
   };
 
   if (save) {
-    saveResult(result, 'metadata', 'dimensions');
+    saveResult(result, "metadata", "dimensions");
   }
 
   return result as MetadataResponse;
@@ -70,7 +70,7 @@ export async function getAvailableMetrics(save = true): Promise<MetadataResponse
   };
 
   if (save) {
-    saveResult(result, 'metadata', 'metrics');
+    saveResult(result, "metadata", "metrics");
   }
 
   return result as MetadataResponse;
@@ -88,7 +88,7 @@ export async function getPropertyMetadata(save = true): Promise<MetadataResponse
   });
 
   if (save) {
-    saveResult(response, 'metadata', 'full');
+    saveResult(response, "metadata", "full");
   }
 
   return response as MetadataResponse;

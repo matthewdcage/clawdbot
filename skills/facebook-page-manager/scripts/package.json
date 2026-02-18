@@ -2,11 +2,11 @@
   "name": "facebook-page-skill",
   "version": "1.0.0",
   "description": "Facebook Page management CLI",
-  "type": "module",
-  "main": "cli.js",
   "bin": {
     "fbpage": "./cli.js"
   },
+  "type": "module",
+  "main": "cli.js",
   "scripts": {
     "auth": "node auth.js",
     "cli": "node cli.js"

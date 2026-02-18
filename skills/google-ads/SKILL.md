@@ -28,6 +28,7 @@ If no config found, ask: "Do you have Google Ads API credentials, or should I us
 **Requirements:** User logged into ads.google.com in browser
 
 ### Setup
+
 1. User opens ads.google.com and logs in
 2. User clicks Clawdbot Browser Relay toolbar icon (badge ON)
 3. Use `browser` tool with `profile="chrome"`
@@ -35,6 +36,7 @@ If no config found, ask: "Do you have Google Ads API credentials, or should I us
 ### Common Workflows
 
 #### Get Campaign Performance
+
 ```
 1. Navigate to: ads.google.com/aw/campaigns
 2. Set date range (top right date picker)
@@ -43,6 +45,7 @@ If no config found, ask: "Do you have Google Ads API credentials, or should I us
 ```
 
 #### Find Zero-Conversion Keywords (Wasted Spend)
+
 ```
 1. Navigate to: ads.google.com/aw/keywords
 2. Click "Add filter" → Conversions → Less than → 1
@@ -52,6 +55,7 @@ If no config found, ask: "Do you have Google Ads API credentials, or should I us
 ```
 
 #### Pause Keywords/Campaigns
+
 ```
 1. Navigate to keywords or campaigns view
 2. Check boxes for items to pause
@@ -60,6 +64,7 @@ If no config found, ask: "Do you have Google Ads API credentials, or should I us
 ```
 
 #### Download Reports
+
 ```
 1. Navigate to desired view (campaigns, keywords, etc.)
 2. Click "Download" icon (top right of table)
@@ -76,6 +81,7 @@ If no config found, ask: "Do you have Google Ads API credentials, or should I us
 **Requirements:** Google Ads API developer token + OAuth credentials
 
 ### Setup Check
+
 ```bash
 # Verify google-ads SDK
 python -c "from google.ads.googleads.client import GoogleAdsClient; print('OK')"
@@ -87,6 +93,7 @@ cat ~/.google-ads.yaml
 ### Common Operations
 
 #### Query Campaign Performance
+
 ```python
 from google.ads.googleads.client import GoogleAdsClient
 
@@ -106,6 +113,7 @@ response = ga_service.search(customer_id=CUSTOMER_ID, query=query)
 ```
 
 #### Find Zero-Conversion Keywords
+
 ```python
 query = """
     SELECT ad_group_criterion.keyword.text,
@@ -119,6 +127,7 @@ query = """
 ```
 
 #### Pause Keywords
+
 ```python
 operations = []
 for keyword_id in keywords_to_pause:
@@ -138,13 +147,13 @@ service.mutate_ad_group_criteria(customer_id=customer_id, operations=operations)
 
 Quick health check for any Google Ads account:
 
-| Check | Browser Path | What to Look For |
-|-------|--------------|------------------|
-| Zero-conv keywords | Keywords → Filter: Conv<1, Cost>$500 | Wasted spend |
-| Empty ad groups | Ad Groups → Filter: Ads=0 | No creative running |
-| Policy violations | Campaigns → Status column | Yellow warning icons |
-| Optimization Score | Overview page (top right) | Below 70% = action needed |
-| Conversion tracking | Tools → Conversions | Inactive/no recent data |
+| Check               | Browser Path                         | What to Look For          |
+| ------------------- | ------------------------------------ | ------------------------- |
+| Zero-conv keywords  | Keywords → Filter: Conv<1, Cost>$500 | Wasted spend              |
+| Empty ad groups     | Ad Groups → Filter: Ads=0            | No creative running       |
+| Policy violations   | Campaigns → Status column            | Yellow warning icons      |
+| Optimization Score  | Overview page (top right)            | Below 70% = action needed |
+| Conversion tracking | Tools → Conversions                  | Inactive/no recent data   |
 
 ---
 
@@ -154,12 +163,14 @@ When reporting findings, use tables:
 
 ```markdown
 ## Campaign Performance (Last 30 Days)
-| Campaign | Cost | Conv | CPA | Status |
-|----------|------|------|-----|--------|
-| Branded  | $5K  | 50   | $100| ✅ Good |
-| SDK Web  | $10K | 2    | $5K | ❌ Pause |
+
+| Campaign | Cost | Conv | CPA  | Status   |
+| -------- | ---- | ---- | ---- | -------- |
+| Branded  | $5K  | 50   | $100 | ✅ Good  |
+| SDK Web  | $10K | 2    | $5K  | ❌ Pause |
 
 ## Recommended Actions
+
 1. **PAUSE**: SDK Web campaign ($5K CPA)
 2. **INCREASE**: Branded budget (strong performer)
 ```
@@ -169,11 +180,13 @@ When reporting findings, use tables:
 ## Troubleshooting
 
 ### Browser Mode Issues
+
 - **Can't see data**: Check user is on correct account (top right account selector)
 - **Slow loading**: Google Ads UI is heavy; wait for tables to fully load
 - **Session expired**: User needs to re-login to ads.google.com
 
 ### API Mode Issues
+
 - **Authentication failed**: Refresh OAuth token, check `google-ads.yaml`
 - **Developer token rejected**: Ensure token is approved (not test mode)
 - **Customer ID error**: Use 10-digit ID without dashes

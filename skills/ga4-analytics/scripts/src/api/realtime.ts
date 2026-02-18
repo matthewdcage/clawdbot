@@ -2,8 +2,8 @@
  * Realtime API - Live GA4 data
  */
 
-import { getClient, getPropertyId } from '../core/client.js';
-import { saveResult } from '../core/storage.js';
+import { getClient, getPropertyId } from "../core/client.js";
+import { saveResult } from "../core/storage.js";
 
 /**
  * Realtime report response structure
@@ -27,12 +27,12 @@ export async function getActiveUsers(save = true): Promise<RealtimeResponse> {
 
   const [response] = await client.runRealtimeReport({
     property,
-    dimensions: [{ name: 'unifiedScreenName' }],
-    metrics: [{ name: 'activeUsers' }],
+    dimensions: [{ name: "unifiedScreenName" }],
+    metrics: [{ name: "activeUsers" }],
   });
 
   if (save) {
-    saveResult(response, 'realtime', 'active_users');
+    saveResult(response, "realtime", "active_users");
   }
 
   return response as RealtimeResponse;
@@ -47,12 +47,12 @@ export async function getRealtimeEvents(save = true): Promise<RealtimeResponse> 
 
   const [response] = await client.runRealtimeReport({
     property,
-    dimensions: [{ name: 'eventName' }],
-    metrics: [{ name: 'eventCount' }],
+    dimensions: [{ name: "eventName" }],
+    metrics: [{ name: "eventCount" }],
   });
 
   if (save) {
-    saveResult(response, 'realtime', 'events');
+    saveResult(response, "realtime", "events");
   }
 
   return response as RealtimeResponse;
@@ -67,12 +67,12 @@ export async function getRealtimePages(save = true): Promise<RealtimeResponse> {
 
   const [response] = await client.runRealtimeReport({
     property,
-    dimensions: [{ name: 'unifiedScreenName' }],
-    metrics: [{ name: 'screenPageViews' }],
+    dimensions: [{ name: "unifiedScreenName" }],
+    metrics: [{ name: "screenPageViews" }],
   });
 
   if (save) {
-    saveResult(response, 'realtime', 'pages');
+    saveResult(response, "realtime", "pages");
   }
 
   return response as RealtimeResponse;
@@ -87,12 +87,12 @@ export async function getRealtimeSources(save = true): Promise<RealtimeResponse>
 
   const [response] = await client.runRealtimeReport({
     property,
-    dimensions: [{ name: 'firstUserSource' }, { name: 'firstUserMedium' }],
-    metrics: [{ name: 'activeUsers' }],
+    dimensions: [{ name: "firstUserSource" }, { name: "firstUserMedium" }],
+    metrics: [{ name: "activeUsers" }],
   });
 
   if (save) {
-    saveResult(response, 'realtime', 'sources');
+    saveResult(response, "realtime", "sources");
   }
 
   return response as RealtimeResponse;

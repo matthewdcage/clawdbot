@@ -13,21 +13,25 @@ Instead of telling the agent "how to do it," engineer conditions where good outc
 These are hard gates that must pass before work is considered complete:
 
 **Tests**
+
 - All unit tests pass: `npm run test` / `pytest`
 - Integration tests pass: `npm run test:e2e` / `pytest tests/integration`
 - Coverage thresholds met: e.g., 80%+
 
 **Typecheck**
+
 - TypeScript: `npx tsc --noEmit`
 - Python: `mypy src/`
 - No type errors allowed
 
 **Lint**
+
 - ESLint: `npm run lint` / `eslint src/`
 - Ruff: `ruff check src/`
 - Style enforcement
 
 **Build**
+
 - Bundle compiles: `npm run build`
 - Production artifact created
 - No build errors
@@ -37,16 +41,19 @@ These are hard gates that must pass before work is considered complete:
 For criteria that resist automation, use LLM reviews with binary pass/fail:
 
 **UX Quality**
+
 - Navigation is intuitive and discoverable
 - Primary actions are obvious
 - Error messages are helpful
 
 **Design Quality**
+
 - Visual hierarchy is clear
 - Brand consistency maintained
 - Layout follows patterns
 
 **Content Quality**
+
 - Tone is appropriate for audience
 - Information hierarchy is logical
 - No awkward phrasing
@@ -59,12 +66,14 @@ For criteria that resist automation, use LLM reviews with binary pass/fail:
 # Validation
 
 ## Programmatic Gates (Run these after implementing)
-- Tests: npm run test          # All tests must pass
+
+- Tests: npm run test # All tests must pass
 - Typecheck: npx tsc --noEmit # No type errors
-- Lint: npm run lint             # Style must pass
-- Build: npm run build            # Bundle compiles
+- Lint: npm run lint # Style must pass
+- Build: npm run build # Bundle compiles
 
 ## Subjective Gates (Use LLM-as-Judge for these)
+
 - UX Review: Review user flow for intuitiveness
 - Design Review: Check visual hierarchy and consistency
 - Tone Review: Verify messaging appropriateness
@@ -90,19 +99,22 @@ When sub-agent completes work:
 ## Anti-Patterns
 
 ❌ **Don't skip gates**
-   - "Tests pass locally" → no, must actually run
-   - "Will fix lint later" → no, fix now
-   - "Looks good" → verify with gates
+
+- "Tests pass locally" → no, must actually run
+- "Will fix lint later" → no, fix now
+- "Looks good" → verify with gates
 
 ❌ **Don't cheat completion**
-   - Marking [x] without tests passing
-   - Stub implementations that skip tests
-   - Assuming "should work" without validation
+
+- Marking [x] without tests passing
+- Stub implementations that skip tests
+- Assuming "should work" without validation
 
 ✅ **Do enforce quality**
-   - All gates must pass before committing
-   - Backpressure drives iteration and quality
-   - Natural convergence through enforcement
+
+- All gates must pass before committing
+- Backpressure drives iteration and quality
+- Natural convergence through enforcement
 
 ## Example Gate Failure Flow
 

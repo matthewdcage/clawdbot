@@ -4,11 +4,11 @@
  * Manual code flow - user copies redirect URL containing code
  */
 
-import { createInterface } from "readline";
+import { config } from "dotenv";
 import { readFileSync, writeFileSync, chmodSync, existsSync } from "fs";
 import { dirname, join } from "path";
+import { createInterface } from "readline";
 import { fileURLToPath } from "url";
-import { config } from "dotenv";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const SKILL_DIR = join(__dirname, "..");
@@ -21,24 +21,19 @@ config({ path: ENV_FILE });
 const GRAPH_API_VERSION = "v21.0";
 const GRAPH_API_BASE = `https://graph.facebook.com/${GRAPH_API_VERSION}`;
 
-const SCOPES = [
-  "pages_show_list",
-  "pages_read_engagement",
-  "pages_manage_posts",
-  "public_profile",
-];
+const SCOPES = ["pages_show_list", "pages_read_engagement", "pages_manage_posts", "public_profile"];
 
 function loadConfig() {
   const appId = process.env.META_APP_ID;
   const appSecret = process.env.META_APP_SECRET;
-  
+
   if (!appId || !appSecret) {
     console.error("Error: META_APP_ID and META_APP_SECRET not found");
     console.error(`Create .env file at: ${ENV_FILE}`);
     console.error("Copy from .env.example and fill in your values");
     process.exit(1);
   }
-  
+
   return { app_id: appId, app_secret: appSecret };
 }
 
@@ -70,7 +65,7 @@ async function exchangeCodeForToken(code, config) {
     redirect_uri: "https://localhost/",
     code,
   });
-  
+
   const resp = await fetch(`${GRAPH_API_BASE}/oauth/access_token?${params}`);
   if (!resp.ok) {
     const err = await resp.json();
@@ -86,7 +81,7 @@ async function getLongLivedToken(shortToken, config) {
     client_secret: config.app_secret,
     fb_exchange_token: shortToken,
   });
-  
+
   const resp = await fetch(`${GRAPH_API_BASE}/oauth/access_token?${params}`);
   if (!resp.ok) {
     const err = await resp.json();
@@ -100,7 +95,7 @@ async function getPageTokens(userToken) {
     access_token: userToken,
     fields: "id,name,access_token",
   });
-  
+
   const resp = await fetch(`${GRAPH_API_BASE}/me/accounts?${params}`);
   if (!resp.ok) {
     const err = await resp.json();
@@ -115,7 +110,7 @@ function extractCodeFromUrl(url) {
     const parsed = new URL(url);
     const code = parsed.searchParams.get("code");
     if (code) return code;
-    
+
     // Check fragment
     const fragmentParams = new URLSearchParams(parsed.hash.slice(1));
     return fragmentParams.get("code");
@@ -137,7 +132,7 @@ function prompt(question) {
 async function cmdLogin() {
   const config = loadConfig();
   const loginUrl = getLoginUrl(config);
-  
+
   console.log("\n=== Facebook Page OAuth Login ===\n");
   console.log("1. Open this URL in your browser:\n");
   console.log(loginUrl);
@@ -146,39 +141,37 @@ async function cmdLogin() {
   console.log("   https://localhost/?code=...");
   console.log("   (Browser sẽ báo lỗi không load được - đó là bình thường!)");
   console.log("\n4. Copy the ENTIRE URL from your browser address bar and paste it below:\n");
-  
+
   const redirectUrl = await prompt("Paste URL here: ");
-  
+
   const code = extractCodeFromUrl(redirectUrl);
   if (!code) {
     console.error("Error: Could not extract code from URL");
     process.exit(1);
   }
-  
+
   console.log("\nExchanging code for token...");
   const tokenResp = await exchangeCodeForToken(code, config);
   const shortToken = tokenResp.access_token;
-  
+
   console.log("Getting long-lived token...");
   const longLivedResp = await getLongLivedToken(shortToken, config);
   const userToken = longLivedResp.access_token;
-  
+
   console.log("Fetching Page tokens...");
   const pages = await getPageTokens(userToken);
-  
+
   if (!pages.length) {
     console.log("Warning: No Pages found. Make sure you have admin access to at least one Page.");
   }
-  
+
   const tokens = {
     user_token: userToken,
-    pages: Object.fromEntries(
-      pages.map((p) => [p.id, { name: p.name, token: p.access_token }])
-    ),
+    pages: Object.fromEntries(pages.map((p) => [p.id, { name: p.name, token: p.access_token }])),
   };
-  
+
   saveTokens(tokens);
-  
+
   console.log(`\nSuccess! Found ${pages.length} Page(s):`);
   for (const page of pages) {
     console.log(`  - ${page.name} (ID: ${page.id})`);
@@ -191,7 +184,7 @@ function cmdStatus() {
     console.log("No tokens found. Run: node auth.js login");
     return;
   }
-  
+
   console.log(`User token: ${tokens.user_token ? "Present" : "Missing"}`);
   console.log(`Pages: ${Object.keys(tokens.pages || {}).length}`);
   for (const [pageId, pageInfo] of Object.entries(tokens.pages || {})) {
@@ -202,20 +195,20 @@ function cmdStatus() {
 async function cmdRefresh() {
   const config = loadConfig();
   const tokens = loadTokens();
-  
+
   if (!tokens?.user_token) {
     console.log("No user token found. Run: node auth.js login");
     return;
   }
-  
+
   console.log("Refreshing page tokens...");
   const pages = await getPageTokens(tokens.user_token);
-  
+
   tokens.pages = Object.fromEntries(
-    pages.map((p) => [p.id, { name: p.name, token: p.access_token }])
+    pages.map((p) => [p.id, { name: p.name, token: p.access_token }]),
   );
   saveTokens(tokens);
-  
+
   console.log(`Refreshed ${pages.length} Page token(s)`);
 }
 

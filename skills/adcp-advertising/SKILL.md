@@ -74,24 +74,28 @@ No dashboards. No forms. No ad platform expertise required.
 Trigger this skill when users ask about:
 
 **Campaign Management**
+
 - "Create a display ad campaign"
 - "Launch Facebook ads for my product"
 - "Set up a $5000 video advertising campaign"
 - "Pause my underperforming campaigns"
 
 **Ad Discovery & Media Buying**
+
 - "Find advertising inventory for luxury brands"
 - "Show me CTV ad placements in major cities"
 - "What display ad options are available?"
 - "Buy media for a tech startup"
 
 **Creative Management**
+
 - "Upload these banner images"
 - "Which creative is performing best?"
 - "Add video ads to my campaign"
 - "Manage my ad library"
 
 **Performance & Optimization**
+
 - "How is my campaign performing?"
 - "Show me ROI by channel"
 - "Optimize my ad spend"
@@ -99,6 +103,7 @@ Trigger this skill when users ask about:
 - "Track impressions and click-through rates"
 
 **Targeting & Audiences**
+
 - "Target professionals in California"
 - "Set up demographic targeting"
 - "Create a retargeting campaign"
@@ -111,38 +116,49 @@ Trigger this skill when users ask about:
 **No setup required.** Use the included test agent to try everything:
 
 **Step 1: Discover what's available**
+
 ```
 "Show me advertising capabilities"
 ```
+
 Browse available channels, publishers, and formats.
 
 **Step 2: Find ad inventory**
+
 ```
 "Find display ads for a tech startup, budget $5000"
 ```
+
 AI searches and shows matching products with pricing.
 
 **Step 3: Launch campaign**
+
 ```
 "Create campaign with Product prod_123, $5000 budget, targeting California tech professionals"
 ```
+
 Campaign goes live instantly.
 
 **Step 4: Upload your ads**
+
 ```
 "Upload these banner images as creatives"
 ```
+
 Drop files, get instant creative IDs.
 
 **Step 5: Monitor performance**
+
 ```
 "Show campaign metrics and ROI"
 ```
+
 Real-time impressions, clicks, CTR, spend.
 
 ### Real-World Usage Examples
 
 **Quick campaign launch:**
+
 ```
 User: "I need to run display ads for my SaaS product"
 Agent: [Discovers products] "Found 5 display packages. Want details?"
@@ -151,6 +167,7 @@ Agent: [Creates campaign] "Campaign live! ID: mb_abc123"
 ```
 
 **Performance optimization:**
+
 ```
 User: "How are my video ads performing?"
 Agent: [Shows metrics] "Package A: 2.3% CTR, Package B: 0.8% CTR"
@@ -159,6 +176,7 @@ Agent: [Reallocates] "Budget updated. Package A now $15k"
 ```
 
 **Multi-channel campaign:**
+
 ```
 User: "Launch omnichannel campaign: display in CA, video in NYC, $50k total"
 Agent: [Creates packages] "3 packages created across display and video"
@@ -169,6 +187,7 @@ Agent: [Creates packages] "3 packages created across display and video"
 ### Natural Language Understanding
 
 Speak naturally. The skill understands:
+
 - **Budgets**: "$5000", "five thousand dollars", "5k budget"
 - **Locations**: "California", "major US cities", "New York and LA"
 - **Audiences**: "tech professionals", "age 25-45", "high income"
@@ -177,33 +196,41 @@ Speak naturally. The skill understands:
 ### Progressive Workflow
 
 **1. Discovery Phase**
+
 ```
 "Find video advertising for luxury brands"
 ```
+
 ↓ Agent searches inventory
 ↓ Shows matched products with pricing
 ↓ Explains targeting and formats
 
 **2. Campaign Creation**
+
 ```
 "Create campaign with Product 1, $25k, target professionals"
 ```
+
 ↓ Agent creates media buy
 ↓ Sets up targeting overlay
 ↓ Returns campaign ID and status
 
 **3. Creative Management**
+
 ```
 "Upload my banner ads"
 ```
+
 ↓ Agent syncs creatives
 ↓ Assigns to campaign
 ↓ Returns creative IDs
 
 **4. Monitoring & Optimization**
+
 ```
 "Show performance"
 ```
+
 ↓ Agent fetches delivery data  
 ↓ Shows metrics by package/creative  
 ↓ Suggests optimizations
@@ -214,9 +241,9 @@ Speak naturally. The skill understands:
 
 ```javascript
 const campaign = await testAgent.createMediaBuy({
-  buyer_ref: 'campaign-2026-q1',
-  brand_manifest: { url: 'https://acme.com' },
-  packages: [{ product_id: 'premium_display', budget: 10000 }]
+  buyer_ref: "campaign-2026-q1",
+  brand_manifest: { url: "https://acme.com" },
+  packages: [{ product_id: "premium_display", budget: 10000 }],
 });
 ```
 
@@ -224,10 +251,12 @@ const campaign = await testAgent.createMediaBuy({
 
 ```javascript
 await testAgent.syncCreatives({
-  creatives: [{ 
-    buyer_ref: 'banner-300x250',
-    url: 'https://cdn.acme.com/banner.jpg'
-  }]
+  creatives: [
+    {
+      buyer_ref: "banner-300x250",
+      url: "https://cdn.acme.com/banner.jpg",
+    },
+  ],
 });
 ```
 
@@ -235,7 +264,7 @@ await testAgent.syncCreatives({
 
 ```javascript
 const delivery = await testAgent.getMediaBuyDelivery({
-  media_buy_id: 'mb_abc123'
+  media_buy_id: "mb_abc123",
 });
 console.log(`CTR: ${delivery.totals.ctr}%, Spend: $${delivery.totals.spend}`);
 ```
@@ -264,6 +293,7 @@ AdCP provides 8 standardized tasks for the complete advertising lifecycle. Learn
 Brand context can be provided two ways:
 
 **URL reference** (recommended - agent fetches brand info):
+
 ```json
 {
   "brand_manifest": {
@@ -273,6 +303,7 @@ Brand context can be provided two ways:
 ```
 
 **Inline manifest** (full brand details):
+
 ```json
 {
   "brand_manifest": {
@@ -288,6 +319,7 @@ Brand context can be provided two ways:
 ### Pricing Models
 
 Products support various pricing models:
+
 - **CPM** (Cost Per Mille/Thousand) - Fixed price per 1000 impressions
 - **CPM-Auction** - Bid-based pricing for impressions
 - **CPCV** (Cost Per Completed View) - Video completions
@@ -299,11 +331,13 @@ For auction pricing, include `bid_price` in your package.
 ### Asynchronous Operations
 
 AdCP is **not a real-time protocol**. Operations may take:
+
 - **~1 second** - Simple lookups (formats, creative lists)
 - **~60 seconds** - AI/inference operations (product discovery)
 - **Minutes to days** - Operations requiring human approval (campaign creation)
 
 Always check the `status` field in responses:
+
 - `completed` - Operation finished successfully
 - `pending` - Awaiting approval or processing
 - `failed` - Operation failed (check error details)
@@ -311,6 +345,7 @@ Always check the `status` field in responses:
 ### Targeting Capabilities
 
 Apply targeting overlays to campaigns:
+
 ```javascript
 {
   targeting_overlay: {
@@ -389,18 +424,18 @@ const delivery = await agent.getMediaBuyDelivery({
 ```javascript
 // Pause, adjust budget, and resume campaign
 await agent.updateMediaBuy({
-  media_buy_id: 'mb_abc123',
+  media_buy_id: "mb_abc123",
   updates: {
-    status: 'paused',
+    status: "paused",
     budget_change: 5000, // Add $5000
-    end_time: '2026-04-30T23:59:59Z'
-  }
+    end_time: "2026-04-30T23:59:59Z",
+  },
 });
 
 // Resume after adjustments
 await agent.updateMediaBuy({
-  media_buy_id: 'mb_abc123',
-  updates: { status: 'active' }
+  media_buy_id: "mb_abc123",
+  updates: { status: "active" },
 });
 ```
 
@@ -414,12 +449,12 @@ For development and testing, use the public test agent:
 **Auth Token**: `1v8tAhASaUYYp4odoQ1PnMpdqNaMiTrCRqYo9OJp6IQ`
 
 ```javascript
-import { testAgent } from '@adcp/client/testing';
+import { testAgent } from "@adcp/client/testing";
 
 // No authentication needed for test agent
 const result = await testAgent.getProducts({
-  brief: 'Test campaign',
-  brand_manifest: { url: 'https://example.com' }
+  brief: "Test campaign",
+  brand_manifest: { url: "https://example.com" },
 });
 ```
 
@@ -430,6 +465,7 @@ Interactive testing available at: **[testing.adcontextprotocol.org](https://test
 Common error patterns:
 
 **400 Bad Request** - Invalid parameters:
+
 ```json
 {
   "error": {
@@ -441,6 +477,7 @@ Common error patterns:
 ```
 
 **401 Unauthorized** - Missing or invalid auth:
+
 ```json
 {
   "error": {
@@ -451,6 +488,7 @@ Common error patterns:
 ```
 
 **404 Not Found** - Invalid ID reference:
+
 ```json
 {
   "error": {
@@ -462,6 +500,7 @@ Common error patterns:
 ```
 
 Always check for errors before processing responses:
+
 ```javascript
 if (result.error) {
   console.error(`Error: ${result.error.message}`);
@@ -478,18 +517,20 @@ Call `get_adcp_capabilities` first to understand what the agent supports before 
 ### 2. Use Clear Buyer References
 
 Use descriptive `buyer_ref` values for tracking:
+
 - Good: `'campaign-2026-q1-tech-launch'`
 - Avoid: `'c1'`, `'test'`, `'abc'`
 
 ### 3. Handle Async Operations
 
 Check `status` field and implement polling for pending operations:
+
 ```javascript
-let status = 'pending';
-while (status === 'pending') {
+let status = "pending";
+while (status === "pending") {
   await sleep(5000); // Wait 5 seconds
   const update = await agent.getMediaBuyDelivery({
-    media_buy_id: campaign.media_buy_id
+    media_buy_id: campaign.media_buy_id,
   });
   status = update.status;
 }
@@ -498,6 +539,7 @@ while (status === 'pending') {
 ### 4. Write Detailed Briefs
 
 Better briefs lead to better product matches:
+
 - Good: `'Premium video inventory for luxury automotive brand targeting high-income professionals aged 35-54 in major metros. Focus on brand awareness with completion rates above 70%.'`
 - Avoid: `'video ads'`, `'need advertising'`
 
@@ -508,9 +550,10 @@ Always check `list_creative_formats` to ensure your creatives meet requirements 
 ### 6. Monitor Budget Pacing
 
 Regularly check delivery metrics to ensure campaigns are pacing properly:
+
 ```javascript
 const delivery = await agent.getMediaBuyDelivery({
-  media_buy_id: campaign.media_buy_id
+  media_buy_id: campaign.media_buy_id,
 });
 
 const pacing = delivery.delivery.spend / delivery.delivery.budget;
@@ -520,6 +563,7 @@ console.log(`Budget pacing: ${(pacing * 100).toFixed(1)}%`);
 ## Additional Resources
 
 ### Official AdCP Documentation
+
 - **Main Documentation**: https://docs.adcontextprotocol.org
 - **Complete Index**: https://docs.adcontextprotocol.org/llms.txt
 - **Media Buy Protocol**: https://docs.adcontextprotocol.org/docs/media-buy/
@@ -528,6 +572,7 @@ console.log(`Budget pacing: ${(pacing * 100).toFixed(1)}%`);
 - **Quickstart Guide**: https://docs.adcontextprotocol.org/docs/quickstart
 
 ### This Skill's Documentation
+
 - [REFERENCE.md](REFERENCE.md) - Complete API reference and schemas
 - [EXAMPLES.md](EXAMPLES.md) - Real-world campaign examples
 - [PROTOCOLS.md](PROTOCOLS.md) - MCP vs A2A protocol details
@@ -547,6 +592,7 @@ console.log(`Budget pacing: ${(pacing * 100).toFixed(1)}%`);
 ## Support
 
 For help with AdCP:
+
 - Official Repository: https://github.com/adcontextprotocol/adcp
 - Documentation: https://docs.adcontextprotocol.org
 - Interactive Testing: https://testing.adcontextprotocol.org

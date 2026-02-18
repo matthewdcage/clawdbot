@@ -3,6 +3,7 @@
 Complete guide for setting up Google Ads API access.
 
 ## Table of Contents
+
 1. [Prerequisites](#prerequisites)
 2. [OAuth Setup](#oauth-setup)
 3. [Configuration File](#configuration-file)
@@ -14,12 +15,14 @@ Complete guide for setting up Google Ads API access.
 ## Prerequisites
 
 ### What You Need
+
 1. **Google Ads account** (or MCC access)
 2. **Developer token** - Apply at developers.google.com/google-ads/api/docs/first-call/dev-token
 3. **OAuth 2.0 credentials** - Create in Google Cloud Console
 4. **Python 3.8+** with `google-ads` package
 
 ### Install SDK
+
 ```bash
 pip install google-ads
 # Or with venv
@@ -33,6 +36,7 @@ pip install google-ads
 ## OAuth Setup
 
 ### 1. Create OAuth Credentials
+
 ```
 1. Go to console.cloud.google.com
 2. Create project (or select existing)
@@ -44,6 +48,7 @@ pip install google-ads
 ```
 
 ### 2. Generate Refresh Token
+
 ```python
 # oauth_setup.py
 from google_auth_oauthlib.flow import InstalledAppFlow
@@ -60,6 +65,7 @@ print(f"Refresh token: {credentials.refresh_token}")
 ```
 
 ### 3. Get Login Customer ID
+
 ```
 - For single account: Your 10-digit account ID
 - For MCC: The MCC account ID (for API auth)
@@ -71,12 +77,14 @@ print(f"Refresh token: {credentials.refresh_token}")
 ## Configuration File
 
 ### google-ads.yaml
+
 ```yaml
 developer_token: YOUR_DEVELOPER_TOKEN
 client_id: YOUR_CLIENT_ID.apps.googleusercontent.com
 client_secret: YOUR_CLIENT_SECRET
 refresh_token: YOUR_REFRESH_TOKEN
-login_customer_id: YOUR_MCC_ID  # Optional, for MCC accounts
+login_customer_id: YOUR_MCC_ID # Optional, for MCC accounts
+
 
 # Optional settings
 # use_proto_plus: True
@@ -91,6 +99,7 @@ login_customer_id: YOUR_MCC_ID  # Optional, for MCC accounts
 ```
 
 ### Location Options
+
 ```
 1. ~/.google-ads.yaml (default)
 2. ./google-ads.yaml (project directory)
@@ -107,6 +116,7 @@ login_customer_id: YOUR_MCC_ID  # Optional, for MCC accounts
 ## Common Queries
 
 ### Initialize Client
+
 ```python
 from google.ads.googleads.client import GoogleAdsClient
 
@@ -120,11 +130,12 @@ ga_service = client.get_service("GoogleAdsService")
 ```
 
 ### Campaign Performance
+
 ```python
 CUSTOMER_ID = "1234567890"  # No dashes
 
 query = """
-    SELECT 
+    SELECT
         campaign.id,
         campaign.name,
         campaign.status,
@@ -149,9 +160,10 @@ for row in response:
 ```
 
 ### Zero-Conversion Keywords
+
 ```python
 query = """
-    SELECT 
+    SELECT
         ad_group_criterion.criterion_id,
         ad_group_criterion.keyword.text,
         ad_group_criterion.keyword.match_type,
@@ -171,9 +183,10 @@ query = """
 ```
 
 ### Ad Group Status Check
+
 ```python
 query = """
-    SELECT 
+    SELECT
         ad_group.id,
         ad_group.name,
         ad_group.status,
@@ -186,7 +199,7 @@ query = """
 
 # Check for ad groups with no ads
 query_ads = """
-    SELECT 
+    SELECT
         ad_group.id,
         ad_group.name,
         ad_group_ad.ad.id
@@ -197,9 +210,10 @@ query_ads = """
 ```
 
 ### Conversion Actions
+
 ```python
 query = """
-    SELECT 
+    SELECT
         conversion_action.id,
         conversion_action.name,
         conversion_action.status,
@@ -216,6 +230,7 @@ query = """
 ## Mutation Operations
 
 ### Pause Campaigns
+
 ```python
 from google.ads.googleads.client import GoogleAdsClient
 
@@ -236,7 +251,7 @@ def pause_campaigns(customer_id, campaign_ids):
             protobuf_helpers.field_mask(None, campaign._pb)
         )
         operations.append(operation)
-    
+
     response = campaign_service.mutate_campaigns(
         customer_id=customer_id,
         operations=operations
@@ -245,6 +260,7 @@ def pause_campaigns(customer_id, campaign_ids):
 ```
 
 ### Pause Keywords
+
 ```python
 ad_group_criterion_service = client.get_service("AdGroupCriterionService")
 
@@ -261,7 +277,7 @@ def pause_keywords(customer_id, keyword_resource_names):
             protobuf_helpers.field_mask(None, criterion._pb)
         )
         operations.append(operation)
-    
+
     response = ad_group_criterion_service.mutate_ad_group_criteria(
         customer_id=customer_id,
         operations=operations
@@ -270,6 +286,7 @@ def pause_keywords(customer_id, keyword_resource_names):
 ```
 
 ### Update Budget
+
 ```python
 campaign_budget_service = client.get_service("CampaignBudgetService")
 
@@ -280,12 +297,12 @@ def update_budget(customer_id, budget_id, new_amount_micros):
         customer_id, budget_id
     )
     budget.amount_micros = new_amount_micros
-    
+
     client.copy_from(
         operation.update_mask,
         protobuf_helpers.field_mask(None, budget._pb)
     )
-    
+
     response = campaign_budget_service.mutate_campaign_budgets(
         customer_id=customer_id,
         operations=[operation]
@@ -298,6 +315,7 @@ def update_budget(customer_id, budget_id, new_amount_micros):
 ## Error Handling
 
 ### Common Errors
+
 ```python
 from google.ads.googleads.errors import GoogleAdsException
 
@@ -313,6 +331,7 @@ except GoogleAdsException as ex:
 ```
 
 ### Rate Limits
+
 - Standard: 15,000 operations/day (mutate)
 - Query: Generally unlimited but be reasonable
 - Retry with exponential backoff on RESOURCE_EXHAUSTED

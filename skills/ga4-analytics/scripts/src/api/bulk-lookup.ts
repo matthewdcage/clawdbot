@@ -5,10 +5,10 @@
  * for a list of specific URLs, similar to a bulk URL lookup field.
  */
 
-import { getClient, getPropertyId } from '../core/client.js';
-import { saveResult } from '../core/storage.js';
-import { getSettings } from '../config/settings.js';
-import type { ReportResponse, DateRange } from './reports.js';
+import type { ReportResponse, DateRange } from "./reports.js";
+import { getSettings } from "../config/settings.js";
+import { getClient, getPropertyId } from "../core/client.js";
+import { saveResult } from "../core/storage.js";
 
 /**
  * Options for bulk URL lookup
@@ -44,11 +44,11 @@ export interface DimensionFilterExpression {
  * Default metrics for bulk URL lookup
  */
 const DEFAULT_METRICS = [
-  'screenPageViews',
-  'activeUsers',
-  'averageSessionDuration',
-  'bounceRate',
-  'engagementRate',
+  "screenPageViews",
+  "activeUsers",
+  "averageSessionDuration",
+  "bounceRate",
+  "engagementRate",
 ];
 
 /**
@@ -62,13 +62,13 @@ const DEFAULT_METRICS = [
  * @returns Normalized URL array
  */
 export function normalizeUrls(urls: string[]): string[] {
-  return urls.map(url => {
+  return urls.map((url) => {
     // Trim whitespace
     let normalized = url.trim();
 
     // Add leading slash if missing
-    if (!normalized.startsWith('/')) {
-      normalized = '/' + normalized;
+    if (!normalized.startsWith("/")) {
+      normalized = "/" + normalized;
     }
 
     return normalized;
@@ -88,7 +88,7 @@ export function buildUrlFilter(urls: string[]): DimensionFilterExpression | null
 
   return {
     filter: {
-      fieldName: 'pagePath',
+      fieldName: "pagePath",
       inListFilter: {
         values: urls,
         caseSensitive: false,
@@ -106,7 +106,7 @@ function parseDateRange(range: string | DateRange | undefined): DateRange {
     range = settings.defaultDateRange;
   }
 
-  if (typeof range === 'object') {
+  if (typeof range === "object") {
     return range;
   }
 
@@ -116,14 +116,14 @@ function parseDateRange(range: string | DateRange | undefined): DateRange {
     const days = parseInt(match[1], 10);
     return {
       startDate: `${days}daysAgo`,
-      endDate: 'today',
+      endDate: "today",
     };
   }
 
   // Default to 30 days
   return {
-    startDate: '30daysAgo',
-    endDate: 'today',
+    startDate: "30daysAgo",
+    endDate: "today",
   };
 }
 
@@ -148,7 +148,7 @@ function parseDateRange(range: string | DateRange | undefined): DateRange {
  */
 export async function getMetricsForUrls(
   urls: string[],
-  options: BulkLookupOptions = {}
+  options: BulkLookupOptions = {},
 ): Promise<ReportResponse> {
   const { dateRange, metrics = DEFAULT_METRICS, save = true } = options;
 
@@ -175,8 +175,8 @@ export async function getMetricsForUrls(
   const request = {
     property,
     dateRanges: [parsedDateRange],
-    dimensions: [{ name: 'pagePath' }, { name: 'pageTitle' }],
-    metrics: metrics.map(name => ({ name })),
+    dimensions: [{ name: "pagePath" }, { name: "pageTitle" }],
+    metrics: metrics.map((name) => ({ name })),
     dimensionFilter,
   };
 
@@ -184,8 +184,8 @@ export async function getMetricsForUrls(
 
   // Save results if requested
   if (save) {
-    const dateStr = typeof dateRange === 'string' ? dateRange : 'custom';
-    saveResult(response, 'reports', 'bulk_url_lookup', dateStr);
+    const dateStr = typeof dateRange === "string" ? dateRange : "custom";
+    saveResult(response, "reports", "bulk_url_lookup", dateStr);
   }
 
   return response as ReportResponse;

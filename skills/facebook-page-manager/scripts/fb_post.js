@@ -5,10 +5,10 @@
  *   node fb_post.js --page <PAGE_ID> --caption-file <path> [--image <path>]
  */
 
+import { Blob } from "buffer";
 import { readFileSync, existsSync } from "fs";
 import { dirname, join, basename } from "path";
 import { fileURLToPath } from "url";
-import { Blob } from "buffer";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const SKILL_DIR = join(__dirname, "..");
@@ -70,9 +70,18 @@ async function main() {
   const caption = readFileSync(captionFile, "utf-8").trim();
   if (!caption) throw new Error("Empty caption");
 
-  const result = imagePath ? await postPhoto(pageId, pageToken, imagePath, caption) : await postText(pageId, pageToken, caption);
+  const result = imagePath
+    ? await postPhoto(pageId, pageToken, imagePath, caption)
+    : await postText(pageId, pageToken, caption);
 
-  console.log(JSON.stringify({ ok: true, pageId, postId: result.id || result.post_id, usedPhoto: Boolean(imagePath) }));
+  console.log(
+    JSON.stringify({
+      ok: true,
+      pageId,
+      postId: result.id || result.post_id,
+      usedPhoto: Boolean(imagePath),
+    }),
+  );
 }
 
 main().catch((e) => {

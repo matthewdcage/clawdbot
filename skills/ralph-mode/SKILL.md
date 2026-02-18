@@ -10,6 +10,7 @@ Ralph Mode implements the Ralph Wiggum technique adapted for OpenClaw: autonomou
 ## When to Use
 
 Use Ralph Mode when:
+
 - Building features that require multiple iterations and refinement
 - Working on complex projects with acceptance criteria to validate
 - Need automated testing, linting, or typecheck gates
@@ -21,16 +22,19 @@ Use Ralph Mode when:
 ### Three-Phase Workflow
 
 **Phase 1: Requirements Definition**
+
 - Document specs in `specs/` (one file per topic of concern)
 - Define acceptance criteria (observable, verifiable outcomes)
 - Create implementation plan with prioritized tasks
 
 **Phase 2: Planning**
+
 - Gap analysis: compare specs against existing code
 - Generate `IMPLEMENTATION_PLAN.md` with prioritized tasks
 - No implementation during this phase
 
 **Phase 3: Building (Iterative)**
+
 - Pick one task from plan per iteration
 - Implement, validate, update plan, commit
 - Continue until all tasks complete or criteria met
@@ -40,12 +44,14 @@ Use Ralph Mode when:
 Reject incomplete work automatically through validation:
 
 **Programmatic Gates (Always use these):**
+
 - Tests: `[test command]` - Must pass before committing
 - Typecheck: `[typecheck command]` - Catch type errors early
 - Lint: `[lint command]` - Enforce code quality
 - Build: `[build command]` - Verify integration
 
 **Subjective Gates (Use for UX, design, quality):**
+
 - LLM-as-judge reviews for tone, aesthetics, usability
 - Binary pass/fail - converges through iteration
 - Only add after programmatic gates work reliably
@@ -80,19 +86,23 @@ Priority task list - single source of truth. Format:
 # Implementation Plan
 
 ## In Progress
+
 - [ ] Task name (iteration N)
   - Notes: discoveries, bugs, blockers
 
 ## Completed
+
 - [x] Task name (iteration N)
 
 ## Backlog
+
 - [ ] Future task
 ```
 
 ### Topic Scope Test
 
 Can you describe the topic in one sentence without "and"?
+
 - ✅ "User authentication with JWT and session management"
 - ❌ "Auth, profiles, and billing" → 3 topics
 
@@ -104,16 +114,19 @@ Succinct guide for running the project. Keep under 60 lines:
 # Project Operations
 
 ## Build Commands
-npm run dev      # Development server
-npm run build     # Production build
+
+npm run dev # Development server
+npm run build # Production build
 
 ## Validation
-npm run test      # All tests
-npm run lint      # ESLint
-npm run typecheck  # TypeScript
-npm run e2e       # E2E tests
+
+npm run test # All tests
+npm run lint # ESLint
+npm run typecheck # TypeScript
+npm run e2e # E2E tests
 
 ## Operational Notes
+
 - Tests must pass before committing
 - Typecheck failures block commits
 - Use existing utilities from src/lib over ad-hoc copies
@@ -124,22 +137,27 @@ npm run e2e       # E2E tests
 Specialized roles for different tasks:
 
 **Hat: Architect** (`@architect`)
+
 - High-level design, data modeling, API contracts
 - Focus: patterns, scalability, maintainability
 
 **Hat: Implementer** (`@implementer`)
+
 - Write code, implement features, fix bugs
 - Focus: correctness, performance, test coverage
 
 **Hat: Tester** (`@tester`)
+
 - Test authoring, validation, edge cases
 - Focus: coverage, reliability, reproducibility
 
 **Hat: Reviewer** (`@reviewer`)
+
 - Code reviews, PR feedback, quality assessment
 - Focus: style, readability, adherence to specs
 
 **Usage:**
+
 ```
 "Spawn a sub-agent with @architect hat to design the data model"
 ```
@@ -159,6 +177,7 @@ Your job as main agent: engineer setup, observe, course-correct.
 ### Inner Loop (Sub-agent executes)
 
 Each sub-agent iteration:
+
 1. **Study** - Read plan, specs, relevant code
 2. **Select** - Pick most important uncompleted task
 3. **Implement** - Write code, one task only
@@ -169,6 +188,7 @@ Each sub-agent iteration:
 ### Stopping Conditions
 
 Loop ends when:
+
 - ✅ All IMPLEMENTATION_PLAN.md tasks completed
 - ✅ All acceptance criteria met
 - ✅ Tests passing, no blocking issues
@@ -180,20 +200,24 @@ Loop ends when:
 Define success upfront - avoid "seems done" ambiguity.
 
 ### Programmatic (Measurable)
+
 - All tests pass: `[test_command]` returns 0
 - Typecheck passes: No TypeScript errors
 - Build succeeds: Production bundle created
 - Coverage threshold: e.g., 80%+
 
 ### Subjective (LLM-as-Judge)
+
 For quality criteria that resist automation:
 
 ```markdown
 ## Completion Check - UX Quality
+
 Criteria: Navigation is intuitive, primary actions are discoverable
 Test: User can complete core flow without confusion
 
 ## Completion Check - Design Quality
+
 Criteria: Visual hierarchy is clear, brand consistency maintained
 Test: Layout follows established patterns
 ```
@@ -274,6 +298,7 @@ Start a Ralph Mode session:
 ```
 
 I will:
+
 1. Create IMPLEMENTATION_PLAN.md with prioritized tasks
 2. Spawn sub-agents for iterative implementation
 3. Apply backpressure gates (test, lint, typecheck)
@@ -294,6 +319,7 @@ When Ralph patterns emerge, update AGENTS.md:
 ## Escape Hatches
 
 When trajectory goes wrong:
+
 - **Ctrl+C** - Stop loop immediately
 - **Regenerate plan** - "Discard IMPLEMENTATION_PLAN.md and re-plan"
 - **Reset** - "Git reset to last known good state"
@@ -330,6 +356,7 @@ After each Ralph Mode session, document:
 **Duration:** [iterations]
 **Outcome:** success / partial / blocked
 **Learnings:**
+
 - What worked well
 - What needs adjustment
 - Patterns to add to AGENTS.md

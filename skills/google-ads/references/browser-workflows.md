@@ -3,6 +3,7 @@
 Detailed step-by-step browser automation for Google Ads UI.
 
 ## Table of Contents
+
 1. [Navigation Basics](#navigation-basics)
 2. [Campaign Performance](#campaign-performance)
 3. [Keyword Analysis](#keyword-analysis)
@@ -15,6 +16,7 @@ Detailed step-by-step browser automation for Google Ads UI.
 ## Navigation Basics
 
 ### URL Patterns
+
 ```
 Base: https://ads.google.com/aw/
 ├── overview          # Account overview
@@ -27,10 +29,12 @@ Base: https://ads.google.com/aw/
 ```
 
 ### Account Switcher
+
 - Location: Top-right corner, account name dropdown
 - Click to switch between accounts/MCCs
 
 ### Date Range Picker
+
 - Location: Top-right, shows current date range
 - Click → Select preset or custom range
 - Always set before pulling data
@@ -40,6 +44,7 @@ Base: https://ads.google.com/aw/
 ## Campaign Performance
 
 ### View All Campaigns
+
 ```
 1. browser:navigate → ads.google.com/aw/campaigns
 2. browser:snapshot → Look for table with columns:
@@ -52,6 +57,7 @@ Base: https://ads.google.com/aw/
 ```
 
 ### Filter by Status
+
 ```
 1. Click "Add filter" button (filter icon)
 2. Select "Campaign status"
@@ -60,6 +66,7 @@ Base: https://ads.google.com/aw/
 ```
 
 ### Sort by Performance
+
 ```
 1. Click column header (e.g., "Cost")
 2. Click again to reverse sort
@@ -67,6 +74,7 @@ Base: https://ads.google.com/aw/
 ```
 
 ### Common Table Selectors
+
 ```
 Table: [role="grid"] or table.ess-table
 Rows: [role="row"] or tbody tr
@@ -81,6 +89,7 @@ Headers: [role="columnheader"] or th
 ### Find Zero-Conversion Keywords
 
 **Manual Filter Method:**
+
 ```
 1. Navigate: ads.google.com/aw/keywords
 2. Click "Add filter"
@@ -93,19 +102,22 @@ Headers: [role="columnheader"] or th
 ```
 
 **Filter URL (faster):**
+
 ```
 ads.google.com/aw/keywords?filter=metrics.conversions<1,metrics.cost_micros>500000000
 ```
 
 ### Keyword Match Type Analysis
+
 ```
 Filter by match type:
 - Broad: [match_type] = BROAD
-- Phrase: [match_type] = PHRASE  
+- Phrase: [match_type] = PHRASE
 - Exact: [match_type] = EXACT
 ```
 
 ### Quality Score Check
+
 ```
 1. Keywords view
 2. Columns → Modify columns
@@ -119,6 +131,7 @@ Filter by match type:
 ## Bulk Actions
 
 ### Pause Multiple Items
+
 ```
 1. Check boxes next to items (checkbox in first column)
 2. Click "Edit" button (appears in toolbar when items selected)
@@ -127,6 +140,7 @@ Filter by match type:
 ```
 
 ### Enable Paused Items
+
 ```
 1. Filter: Status = Paused
 2. Check boxes for items to enable
@@ -134,6 +148,7 @@ Filter by match type:
 ```
 
 ### Change Budgets
+
 ```
 For campaigns:
 1. Click on budget amount (it's editable)
@@ -148,6 +163,7 @@ For bulk budget changes:
 ```
 
 ### Add Labels
+
 ```
 1. Select items
 2. Click "Labels" button
@@ -160,6 +176,7 @@ For bulk budget changes:
 ## Report Downloads
 
 ### Quick Export
+
 ```
 1. Go to any view (campaigns, keywords, etc.)
 2. Click download icon (↓) in toolbar above table
@@ -171,6 +188,7 @@ For bulk budget changes:
 ```
 
 ### Custom Reports
+
 ```
 1. Navigate: Reports (left menu) → Reports
 2. Click "+ Custom"
@@ -180,6 +198,7 @@ For bulk budget changes:
 ```
 
 ### Scheduled Reports
+
 ```
 1. Create custom report
 2. Click "Schedule" icon
@@ -193,6 +212,7 @@ For bulk budget changes:
 ## Conversion Tracking
 
 ### View Conversion Actions
+
 ```
 1. Navigate: Goals → Conversions → Summary
    OR: ads.google.com/aw/conversions
@@ -203,6 +223,7 @@ For bulk budget changes:
 ```
 
 ### Check Conversion Settings
+
 ```
 For each conversion action:
 1. Click conversion name
@@ -215,6 +236,7 @@ For each conversion action:
 ```
 
 ### Diagnose Tracking Issues
+
 ```
 1. Tools & Settings → Conversions
 2. Click specific conversion action
@@ -228,13 +250,15 @@ For each conversion action:
 ## UI Element Patterns
 
 ### Buttons
+
 ```
 Primary action: button[data-color="primary"]
-Secondary: button[data-color="secondary"]  
+Secondary: button[data-color="secondary"]
 Dropdown triggers: [aria-haspopup="listbox"]
 ```
 
 ### Tables
+
 ```
 Data table: [role="grid"], table.ess-table
 Checkbox column: First td/th in each row
@@ -242,6 +266,7 @@ Sortable header: th[aria-sort], th[role="columnheader"]
 ```
 
 ### Filters
+
 ```
 Filter bar: [role="toolbar"]
 Add filter button: Contains "Add filter" text
@@ -250,6 +275,7 @@ Clear filters: "Clear all" button
 ```
 
 ### Dialogs/Modals
+
 ```
 Modal: [role="dialog"]
 Close button: [aria-label="Close"]

@@ -27,21 +27,21 @@ GA4_DEFAULT_DATE_RANGE=30d
 
 ## Quick Start
 
-| User says | Function to call |
-|-----------|-----------------|
-| "Show me site traffic for the last 30 days" | `siteOverview("30d")` |
-| "What are my top search queries?" | `searchConsoleOverview("30d")` |
-| "Who's on the site right now?" | `liveSnapshot()` |
-| "Reindex these URLs" | `reindexUrls(["https://example.com/page1", ...])` |
-| "Compare this month vs last month" | `compareDateRanges({startDate: "30daysAgo", endDate: "today"}, {startDate: "60daysAgo", endDate: "31daysAgo"})` |
-| "What pages get the most traffic?" | `contentPerformance("30d")` |
+| User says                                   | Function to call                                                                                                |
+| ------------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
+| "Show me site traffic for the last 30 days" | `siteOverview("30d")`                                                                                           |
+| "What are my top search queries?"           | `searchConsoleOverview("30d")`                                                                                  |
+| "Who's on the site right now?"              | `liveSnapshot()`                                                                                                |
+| "Reindex these URLs"                        | `reindexUrls(["https://example.com/page1", ...])`                                                               |
+| "Compare this month vs last month"          | `compareDateRanges({startDate: "30daysAgo", endDate: "today"}, {startDate: "60daysAgo", endDate: "31daysAgo"})` |
+| "What pages get the most traffic?"          | `contentPerformance("30d")`                                                                                     |
 
 Execute functions by importing from `scripts/src/index.ts`:
 
 ```typescript
-import { siteOverview, searchConsoleOverview } from './scripts/src/index.js';
+import { siteOverview, searchConsoleOverview } from "./scripts/src/index.js";
 
-const overview = await siteOverview('30d');
+const overview = await siteOverview("30d");
 ```
 
 Or run directly with tsx:
@@ -55,46 +55,49 @@ npx tsx scripts/src/index.ts
 Every analysis follows three phases:
 
 ### 1. Analyze
+
 Run API functions. Each call hits the Google APIs and returns structured data.
 
 ### 2. Auto-Save
+
 All results automatically save as timestamped JSON files to `results/{category}/`. File naming pattern: `YYYYMMDD_HHMMSS__operation__extra_info.json`
 
 ### 3. Summarize
+
 After analysis, read the saved JSON files and create a markdown summary in `results/summaries/` with data tables, trends, and recommendations.
 
 ## High-Level Functions
 
 ### GA4 Analytics
 
-| Function | Purpose | What it gathers |
-|----------|---------|----------------|
-| `siteOverview(dateRange?)` | Comprehensive site snapshot | Page views, traffic sources, demographics, events |
-| `trafficAnalysis(dateRange?)` | Traffic deep-dive | Sources, sessions by source/medium, new vs returning |
-| `contentPerformance(dateRange?)` | Top pages analysis | Page views, landing pages, exit pages |
-| `userBehavior(dateRange?)` | Engagement patterns | Demographics, events, daily engagement metrics |
-| `compareDateRanges(range1, range2)` | Period comparison | Side-by-side metrics for two date ranges |
-| `liveSnapshot()` | Real-time data | Active users, current pages, current events |
+| Function                            | Purpose                     | What it gathers                                      |
+| ----------------------------------- | --------------------------- | ---------------------------------------------------- |
+| `siteOverview(dateRange?)`          | Comprehensive site snapshot | Page views, traffic sources, demographics, events    |
+| `trafficAnalysis(dateRange?)`       | Traffic deep-dive           | Sources, sessions by source/medium, new vs returning |
+| `contentPerformance(dateRange?)`    | Top pages analysis          | Page views, landing pages, exit pages                |
+| `userBehavior(dateRange?)`          | Engagement patterns         | Demographics, events, daily engagement metrics       |
+| `compareDateRanges(range1, range2)` | Period comparison           | Side-by-side metrics for two date ranges             |
+| `liveSnapshot()`                    | Real-time data              | Active users, current pages, current events          |
 
 ### Search Console
 
-| Function | Purpose | What it gathers |
-|----------|---------|----------------|
-| `searchConsoleOverview(dateRange?)` | SEO snapshot | Top queries, pages, device, country breakdown |
-| `keywordAnalysis(dateRange?)` | Keyword deep-dive | Queries with device breakdown |
-| `seoPagePerformance(dateRange?)` | Page SEO metrics | Top pages by clicks, country breakdown |
+| Function                            | Purpose           | What it gathers                               |
+| ----------------------------------- | ----------------- | --------------------------------------------- |
+| `searchConsoleOverview(dateRange?)` | SEO snapshot      | Top queries, pages, device, country breakdown |
+| `keywordAnalysis(dateRange?)`       | Keyword deep-dive | Queries with device breakdown                 |
+| `seoPagePerformance(dateRange?)`    | Page SEO metrics  | Top pages by clicks, country breakdown        |
 
 ### Indexing
 
-| Function | Purpose |
-|----------|---------|
-| `reindexUrls(urls)` | Request re-indexing for multiple URLs |
-| `checkIndexStatus(urls)` | Check if URLs are indexed |
+| Function                 | Purpose                               |
+| ------------------------ | ------------------------------------- |
+| `reindexUrls(urls)`      | Request re-indexing for multiple URLs |
+| `checkIndexStatus(urls)` | Check if URLs are indexed             |
 
 ### Utility
 
-| Function | Purpose |
-|----------|---------|
+| Function               | Purpose                                       |
+| ---------------------- | --------------------------------------------- |
 | `getAvailableFields()` | List all available GA4 dimensions and metrics |
 
 ### Individual API Functions
@@ -105,11 +108,11 @@ For granular control, import specific functions from the API modules. See [refer
 
 All functions accept flexible date range formats:
 
-| Format | Example | Description |
-|--------|---------|-------------|
-| Shorthand | `"7d"`, `"30d"`, `"90d"` | Days ago to today |
-| Explicit | `{startDate: "2024-01-01", endDate: "2024-01-31"}` | Specific dates |
-| GA4 relative | `{startDate: "30daysAgo", endDate: "today"}` | GA4 relative format |
+| Format       | Example                                            | Description         |
+| ------------ | -------------------------------------------------- | ------------------- |
+| Shorthand    | `"7d"`, `"30d"`, `"90d"`                           | Days ago to today   |
+| Explicit     | `{startDate: "2024-01-01", endDate: "2024-01-31"}` | Specific dates      |
+| GA4 relative | `{startDate: "30daysAgo", endDate: "today"}`       | GA4 relative format |
 
 Default is `"30d"` (configurable via `GA4_DEFAULT_DATE_RANGE` in `.env`).
 
@@ -129,24 +132,26 @@ results/
 ### Managing Results
 
 ```typescript
-import { listResults, loadResult, getLatestResult } from './scripts/src/index.js';
+import { listResults, loadResult, getLatestResult } from "./scripts/src/index.js";
 
 // List recent results
-const files = listResults('reports', 10);
+const files = listResults("reports", 10);
 
 // Load a specific result
 const data = loadResult(files[0]);
 
 // Get most recent result for an operation
-const latest = getLatestResult('reports', 'site_overview');
+const latest = getLatestResult("reports", "site_overview");
 ```
 
 ## Common Dimensions and Metrics
 
 ### Dimensions
+
 `pagePath`, `pageTitle`, `sessionSource`, `sessionMedium`, `country`, `deviceCategory`, `browser`, `date`, `eventName`, `landingPage`, `newVsReturning`
 
 ### Metrics
+
 `screenPageViews`, `activeUsers`, `sessions`, `newUsers`, `bounceRate`, `averageSessionDuration`, `engagementRate`, `conversions`, `totalRevenue`, `eventCount`
 
 ## Tips

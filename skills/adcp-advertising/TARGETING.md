@@ -10,6 +10,7 @@ This guide provides practical targeting strategies for AdCP campaigns. For the c
 ## Overview
 
 AdCP supports four targeting dimensions:
+
 1. **Geographic** - Location-based targeting
 2. **Demographic** - Age, gender, income
 3. **Behavioral** - Interests, purchase intent, browsing history
@@ -36,17 +37,17 @@ Target specific US media markets:
 targeting_overlay: {
   geo: {
     included: [
-      'US-NY',    // New York
-      'US-LA',    // Los Angeles
-      'US-CHI',   // Chicago
-      'US-PHI',   // Philadelphia
-      'US-DAL',   // Dallas-Fort Worth
-      'US-SF',    // San Francisco-Oakland-San Jose
-      'US-ATL',   // Atlanta
-      'US-BOS',   // Boston
-      'US-DC',    // Washington DC
-      'US-HOU'    // Houston
-    ]
+      "US-NY", // New York
+      "US-LA", // Los Angeles
+      "US-CHI", // Chicago
+      "US-PHI", // Philadelphia
+      "US-DAL", // Dallas-Fort Worth
+      "US-SF", // San Francisco-Oakland-San Jose
+      "US-ATL", // Atlanta
+      "US-BOS", // Boston
+      "US-DC", // Washington DC
+      "US-HOU", // Houston
+    ];
   }
 }
 ```
@@ -58,7 +59,7 @@ Target entire US states:
 ```javascript
 targeting_overlay: {
   geo: {
-    included: ['US-CA', 'US-NY', 'US-TX', 'US-FL']
+    included: ["US-CA", "US-NY", "US-TX", "US-FL"];
   }
 }
 ```
@@ -71,11 +72,11 @@ Precise location targeting:
 targeting_overlay: {
   geo: {
     included: [
-      'US-10001',  // Manhattan
-      'US-10002',  // Manhattan
-      'US-90210',  // Beverly Hills
-      'US-94102'   // San Francisco
-    ]
+      "US-10001", // Manhattan
+      "US-10002", // Manhattan
+      "US-90210", // Beverly Hills
+      "US-94102", // San Francisco
+    ];
   }
 }
 ```
@@ -133,14 +134,15 @@ Target specific age groups:
 targeting_overlay: {
   demographics: {
     age_ranges: [
-      { min: 18, max: 24 },  // Gen Z
-      { min: 25, max: 34 }   // Millennials
-    ]
+      { min: 18, max: 24 }, // Gen Z
+      { min: 25, max: 34 }, // Millennials
+    ];
   }
 }
 ```
 
 **Common Age Segments**:
+
 - 18-24: Gen Z
 - 25-34: Millennials (younger)
 - 35-44: Millennials (older)
@@ -153,7 +155,7 @@ targeting_overlay: {
 ```javascript
 targeting_overlay: {
   demographics: {
-    genders: ['M', 'F', 'O']  // Male, Female, Other
+    genders: ["M", "F", "O"]; // Male, Female, Other
   }
 }
 ```
@@ -165,16 +167,13 @@ Target by household income:
 ```javascript
 targeting_overlay: {
   demographics: {
-    income_brackets: [
-      '50k-75k',
-      '75k-100k',
-      '100k+'
-    ]
+    income_brackets: ["50k-75k", "75k-100k", "100k+"];
   }
 }
 ```
 
 **Standard Income Brackets**:
+
 - '0-25k': Low income
 - '25k-50k': Lower-middle income
 - '50k-75k': Middle income
@@ -207,20 +206,21 @@ Target users based on interests:
 targeting_overlay: {
   behavioral: {
     interests: [
-      'technology',
-      'gaming',
-      'travel',
-      'fitness',
-      'cooking',
-      'fashion',
-      'automotive',
-      'real_estate'
-    ]
+      "technology",
+      "gaming",
+      "travel",
+      "fitness",
+      "cooking",
+      "fashion",
+      "automotive",
+      "real_estate",
+    ];
   }
 }
 ```
 
 **Common Interest Categories**:
+
 - **Technology**: tech_enthusiast, early_adopter, software, hardware
 - **Lifestyle**: fitness, wellness, outdoor, travel, luxury
 - **Entertainment**: gaming, movies, music, sports
@@ -236,17 +236,18 @@ Target users actively researching products:
 targeting_overlay: {
   behavioral: {
     purchase_intent: [
-      'automotive',
-      'consumer_electronics',
-      'home_appliances',
-      'travel_services',
-      'financial_services'
-    ]
+      "automotive",
+      "consumer_electronics",
+      "home_appliances",
+      "travel_services",
+      "financial_services",
+    ];
   }
 }
 ```
 
 **High-Intent Categories**:
+
 - Automotive (car shopping)
 - Real estate (home buying)
 - Consumer electronics
@@ -262,13 +263,7 @@ Target users experiencing major life changes:
 ```javascript
 targeting_overlay: {
   behavioral: {
-    life_events: [
-      'new_parent',
-      'recently_moved',
-      'job_change',
-      'wedding',
-      'graduation'
-    ]
+    life_events: ["new_parent", "recently_moved", "job_change", "wedding", "graduation"];
   }
 }
 ```
@@ -299,12 +294,12 @@ Target based on page content:
 targeting_overlay: {
   contextual: {
     keywords: [
-      'innovation',
-      'technology',
-      'artificial intelligence',
-      'machine learning',
-      'cloud computing'
-    ]
+      "innovation",
+      "technology",
+      "artificial intelligence",
+      "machine learning",
+      "cloud computing",
+    ];
   }
 }
 ```
@@ -317,17 +312,18 @@ Target by standardized content categories:
 targeting_overlay: {
   contextual: {
     categories: [
-      'IAB19',    // Technology & Computing
-      'IAB13',    // Personal Finance
-      'IAB3',     // Business
-      'IAB20',    // Travel
-      'IAB1'      // Arts & Entertainment
-    ]
+      "IAB19", // Technology & Computing
+      "IAB13", // Personal Finance
+      "IAB3", // Business
+      "IAB20", // Travel
+      "IAB1", // Arts & Entertainment
+    ];
   }
 }
 ```
 
 **Common IAB Categories**:
+
 - IAB1: Arts & Entertainment
 - IAB2: Automotive
 - IAB3: Business
@@ -363,12 +359,12 @@ Exclude sensitive content:
 targeting_overlay: {
   contextual: {
     exclude_categories: [
-      'IAB25-1',  // Profanity
-      'IAB25-2',  // Hate Speech
-      'IAB25-3',  // Violence
-      'IAB25-4',  // Adult Content
-      'IAB26'     // Illegal Content
-    ]
+      "IAB25-1", // Profanity
+      "IAB25-2", // Hate Speech
+      "IAB25-3", // Violence
+      "IAB25-4", // Adult Content
+      "IAB26", // Illegal Content
+    ];
   }
 }
 ```
@@ -380,12 +376,7 @@ Target specific topics or themes:
 ```javascript
 targeting_overlay: {
   contextual: {
-    topics: [
-      'artificial_intelligence',
-      'sustainable_energy',
-      'electric_vehicles',
-      'remote_work'
-    ]
+    topics: ["artificial_intelligence", "sustainable_energy", "electric_vehicles", "remote_work"];
   }
 }
 ```
@@ -400,39 +391,39 @@ Different targeting for awareness vs. conversion:
 // Awareness stage - broad targeting
 const awarenessTargeting = {
   geo: {
-    included: ['US']
+    included: ["US"],
   },
   demographics: {
-    age_ranges: [{ min: 25, max: 54 }]
+    age_ranges: [{ min: 25, max: 54 }],
   },
   contextual: {
-    categories: ['IAB19']  // Technology
-  }
+    categories: ["IAB19"], // Technology
+  },
 };
 
 // Consideration stage - interest-based
 const considerationTargeting = {
   geo: {
-    included: ['US']
+    included: ["US"],
   },
   demographics: {
-    age_ranges: [{ min: 25, max: 54 }]
+    age_ranges: [{ min: 25, max: 54 }],
   },
   behavioral: {
-    interests: ['technology', 'software'],
-    purchase_intent: ['software']
-  }
+    interests: ["technology", "software"],
+    purchase_intent: ["software"],
+  },
 };
 
 // Conversion stage - retargeting
 const conversionTargeting = {
   behavioral: {
     retargeting: {
-      pixel_id: 'your-pixel-id',
+      pixel_id: "your-pixel-id",
       lookback_days: 14,
-      pages_visited: ['/product/*', '/pricing']
-    }
-  }
+      pages_visited: ["/product/*", "/pricing"],
+    },
+  },
 };
 ```
 
@@ -442,63 +433,63 @@ Create separate packages for different personas:
 
 ```javascript
 const campaign = await agent.createMediaBuy({
-  buyer_ref: 'multi-persona-campaign',
-  brand_manifest: { url: 'https://brand.com' },
+  buyer_ref: "multi-persona-campaign",
+  brand_manifest: { url: "https://brand.com" },
   packages: [
     // Tech Enthusiast Persona
     {
-      buyer_ref: 'pkg-tech-enthusiasts',
-      product_id: 'product_001',
-      pricing_option_id: 'cpm-standard',
+      buyer_ref: "pkg-tech-enthusiasts",
+      product_id: "product_001",
+      pricing_option_id: "cpm-standard",
       budget: 15000,
       targeting_overlay: {
         demographics: {
           age_ranges: [{ min: 25, max: 44 }],
-          genders: ['M', 'F']
+          genders: ["M", "F"],
         },
         behavioral: {
-          interests: ['technology', 'early_adopter', 'gadgets']
-        }
-      }
+          interests: ["technology", "early_adopter", "gadgets"],
+        },
+      },
     },
     // Business Professional Persona
     {
-      buyer_ref: 'pkg-business-pros',
-      product_id: 'product_001',
-      pricing_option_id: 'cpm-standard',
+      buyer_ref: "pkg-business-pros",
+      product_id: "product_001",
+      pricing_option_id: "cpm-standard",
       budget: 15000,
       targeting_overlay: {
         demographics: {
           age_ranges: [{ min: 30, max: 54 }],
-          income_brackets: ['100k+']
+          income_brackets: ["100k+"],
         },
         behavioral: {
-          interests: ['business', 'professional_development'],
-          purchase_intent: ['b2b_software']
-        }
-      }
+          interests: ["business", "professional_development"],
+          purchase_intent: ["b2b_software"],
+        },
+      },
     },
     // Startup Founder Persona
     {
-      buyer_ref: 'pkg-founders',
-      product_id: 'product_001',
-      pricing_option_id: 'cpm-standard',
+      buyer_ref: "pkg-founders",
+      product_id: "product_001",
+      pricing_option_id: "cpm-standard",
       budget: 10000,
       targeting_overlay: {
         demographics: {
-          age_ranges: [{ min: 25, max: 44 }]
+          age_ranges: [{ min: 25, max: 44 }],
         },
         behavioral: {
-          interests: ['entrepreneurship', 'startups', 'venture_capital']
+          interests: ["entrepreneurship", "startups", "venture_capital"],
         },
         contextual: {
-          keywords: ['startup', 'founder', 'entrepreneur']
-        }
-      }
-    }
+          keywords: ["startup", "founder", "entrepreneur"],
+        },
+      },
+    },
   ],
-  start_time: { type: 'asap' },
-  end_time: '2026-12-31T23:59:59Z'
+  start_time: { type: "asap" },
+  end_time: "2026-12-31T23:59:59Z",
 });
 ```
 
@@ -530,23 +521,23 @@ Optimize by time and location:
 // Morning commute in major cities
 const morningCommute = {
   geo: {
-    included: ['US-NY', 'US-LA', 'US-CHI']
+    included: ["US-NY", "US-LA", "US-CHI"],
   },
   schedule: {
-    hours: [6, 7, 8, 9],  // 6am-10am
-    days: [1, 2, 3, 4, 5]  // Weekdays
-  }
+    hours: [6, 7, 8, 9], // 6am-10am
+    days: [1, 2, 3, 4, 5], // Weekdays
+  },
 };
 
 // Evening leisure nationwide
 const eveningLeisure = {
   geo: {
-    included: ['US']
+    included: ["US"],
   },
   schedule: {
-    hours: [18, 19, 20, 21],  // 6pm-10pm
-    days: [1, 2, 3, 4, 5, 6, 7]  // All week
-  }
+    hours: [18, 19, 20, 21], // 6pm-10pm
+    days: [1, 2, 3, 4, 5, 6, 7], // All week
+  },
 };
 ```
 
@@ -575,8 +566,8 @@ Always verify what targeting is supported:
 ```javascript
 const capabilities = await agent.getAdcpCapabilities({});
 
-console.log('Geo targeting:', capabilities.media_buy.execution.geo_targeting);
-console.log('Supported types:', capabilities.media_buy.execution.geo_targeting.supported_types);
+console.log("Geo targeting:", capabilities.media_buy.execution.geo_targeting);
+console.log("Supported types:", capabilities.media_buy.execution.geo_targeting.supported_types);
 ```
 
 ### Estimate Reach
@@ -585,14 +576,16 @@ Check audience size before launching:
 
 ```javascript
 const products = await agent.getProducts({
-  brief: 'Campaign with specific targeting',
-  brand_manifest: { url: 'https://brand.com' }
+  brief: "Campaign with specific targeting",
+  brand_manifest: { url: "https://brand.com" },
 });
 
-products.products.forEach(product => {
+products.products.forEach((product) => {
   if (product.inventory_estimate) {
     console.log(`${product.name}:`);
-    console.log(`  Estimated reach: ${product.inventory_estimate.min_impressions} - ${product.inventory_estimate.max_impressions} impressions`);
+    console.log(
+      `  Estimated reach: ${product.inventory_estimate.min_impressions} - ${product.inventory_estimate.max_impressions} impressions`,
+    );
     console.log(`  Audience size: ${product.inventory_estimate.audience_size} users`);
   }
 });
@@ -606,10 +599,14 @@ Begin with broader targeting and refine based on performance:
 
 ```javascript
 // Week 1: Broad
-{ age_ranges: [{ min: 25, max: 54 }] }
+{
+  age_ranges: [{ min: 25, max: 54 }];
+}
 
 // Week 2: Based on data, narrow
-{ age_ranges: [{ min: 30, max: 44 }] }
+{
+  age_ranges: [{ min: 30, max: 44 }];
+}
 ```
 
 ### 2. Layer Targeting Dimensions
@@ -637,7 +634,7 @@ Isolate targeting variables for testing:
 { demographics: { age_ranges: [{ min: 25, max: 44 }] } }
 
 // Package C: Both
-{ 
+{
   geo: { included: ['US-CA'] },
   demographics: { age_ranges: [{ min: 25, max: 44 }] }
 }
@@ -649,12 +646,12 @@ Analyze delivery by targeting dimension:
 
 ```javascript
 const delivery = await agent.getMediaBuyDelivery({
-  media_buy_id: 'mb_abc123',
-  dimensions: ['geo', 'demographics']
+  media_buy_id: "mb_abc123",
+  dimensions: ["geo", "demographics"],
 });
 
 // See which locations perform best
-delivery.by_geo?.forEach(geo => {
+delivery.by_geo?.forEach((geo) => {
   console.log(`${geo.geo_code}: CTR ${(geo.ctr * 100).toFixed(2)}%`);
 });
 ```
@@ -675,6 +672,7 @@ targeting_overlay: {
 ## Summary
 
 Effective targeting requires:
+
 1. **Understanding your audience** - Demographics, interests, behaviors
 2. **Product targeting alignment** - Check what products already target
 3. **Layering dimensions** - Combine geo, demo, behavioral, contextual

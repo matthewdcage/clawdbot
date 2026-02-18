@@ -4,12 +4,12 @@
  * Commands for managing Facebook Pages via Graph API
  */
 
+import { Blob } from "buffer";
 import { program } from "commander";
+import { config } from "dotenv";
 import { readFileSync, existsSync } from "fs";
 import { dirname, join, basename } from "path";
 import { fileURLToPath } from "url";
-import { config } from "dotenv";
-import { Blob } from "buffer";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const SKILL_DIR = join(__dirname, "..");
@@ -50,7 +50,7 @@ async function apiGet(endpoint, token, params = {}) {
   for (const [k, v] of Object.entries(params)) {
     url.searchParams.set(k, v);
   }
-  
+
   const resp = await fetch(url);
   const data = await resp.json();
   if (!resp.ok) {
@@ -64,18 +64,18 @@ async function apiGet(endpoint, token, params = {}) {
 async function apiPost(endpoint, token, body = {}) {
   const url = new URL(`${GRAPH_API_BASE}/${endpoint}`);
   url.searchParams.set("access_token", token);
-  
+
   const formData = new URLSearchParams();
   for (const [k, v] of Object.entries(body)) {
     formData.set(k, v);
   }
-  
+
   const resp = await fetch(url, {
     method: "POST",
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
     body: formData,
   });
-  
+
   const data = await resp.json();
   if (!resp.ok) {
     console.error(`API Error: ${resp.status}`);
@@ -88,21 +88,21 @@ async function apiPost(endpoint, token, body = {}) {
 async function apiPostMultipart(endpoint, token, fields, filePath) {
   const url = new URL(`${GRAPH_API_BASE}/${endpoint}`);
   url.searchParams.set("access_token", token);
-  
+
   const fileBuffer = readFileSync(filePath);
   const formData = new FormData();
-  
+
   for (const [k, v] of Object.entries(fields)) {
     formData.set(k, v);
   }
-  
+
   formData.set("source", new Blob([fileBuffer]), basename(filePath));
-  
+
   const resp = await fetch(url, {
     method: "POST",
     body: formData,
   });
-  
+
   const data = await resp.json();
   if (!resp.ok) {
     console.error(`API Error: ${resp.status}`);
@@ -115,7 +115,7 @@ async function apiPostMultipart(endpoint, token, fields, filePath) {
 async function apiDelete(endpoint, token) {
   const url = new URL(`${GRAPH_API_BASE}/${endpoint}`);
   url.searchParams.set("access_token", token);
-  
+
   const resp = await fetch(url, { method: "DELETE" });
   const data = await resp.json();
   if (!resp.ok) {
@@ -134,12 +134,12 @@ program
   .action(() => {
     const tokens = loadTokens();
     const pages = tokens.pages || {};
-    
+
     if (!Object.keys(pages).length) {
       console.log("No pages found");
       return;
     }
-    
+
     console.log(`${"ID".padEnd(20)} ${"Name".padEnd(40)}`);
     console.log("-".repeat(60));
     for (const [pageId, pageInfo] of Object.entries(pages)) {
@@ -159,18 +159,19 @@ postCmd
   .action(async (opts) => {
     const tokens = loadTokens();
     const pageToken = getPageToken(tokens, opts.page);
-    
+
     const result = await apiGet(`${opts.page}/posts`, pageToken, {
-      fields: "id,message,created_time,permalink_url,shares,likes.summary(true),comments.summary(true)",
+      fields:
+        "id,message,created_time,permalink_url,shares,likes.summary(true),comments.summary(true)",
       limit: opts.limit,
     });
-    
+
     const posts = result.data || [];
     if (!posts.length) {
       console.log("No posts found");
       return;
     }
-    
+
     for (const post of posts) {
       console.log(`\n${"=".repeat(60)}`);
       console.log(`ID: ${post.id}`);
@@ -194,9 +195,9 @@ postCmd
   .action(async (opts) => {
     const tokens = loadTokens();
     const pageToken = getPageToken(tokens, opts.page);
-    
+
     let result;
-    
+
     if (opts.photo) {
       // Photo post
       const fields = {};
@@ -215,7 +216,7 @@ postCmd
       }
       result = await apiPost(`${opts.page}/feed`, pageToken, { message: opts.message });
     }
-    
+
     console.log(`Post created! ID: ${result.id || result.post_id}`);
   });
 
@@ -227,7 +228,7 @@ postCmd
   .action(async (opts) => {
     const tokens = loadTokens();
     const pageToken = getPageToken(tokens, opts.page);
-    
+
     const result = await apiDelete(opts.post, pageToken);
     if (result.success) {
       console.log("Post deleted successfully");
@@ -248,18 +249,18 @@ commentsCmd
   .action(async (opts) => {
     const tokens = loadTokens();
     const userToken = tokens.user_token;
-    
+
     const result = await apiGet(`${opts.post}/comments`, userToken, {
       fields: "id,message,from,created_time,like_count,is_hidden",
       limit: opts.limit,
     });
-    
+
     const comments = result.data || [];
     if (!comments.length) {
       console.log("No comments found");
       return;
     }
-    
+
     for (const comment of comments) {
       const hidden = comment.is_hidden ? " [HIDDEN]" : "";
       console.log(`\n${"-".repeat(40)}`);
@@ -279,7 +280,7 @@ commentsCmd
   .action(async (opts) => {
     const tokens = loadTokens();
     const userToken = tokens.user_token;
-    
+
     const result = await apiPost(`${opts.comment}/comments`, userToken, {
       message: opts.message,
     });
@@ -293,7 +294,7 @@ commentsCmd
   .action(async (opts) => {
     const tokens = loadTokens();
     const userToken = tokens.user_token;
-    
+
     const result = await apiPost(opts.comment, userToken, { is_hidden: "true" });
     if (result.success) {
       console.log("Comment hidden successfully");
@@ -309,7 +310,7 @@ commentsCmd
   .action(async (opts) => {
     const tokens = loadTokens();
     const userToken = tokens.user_token;
-    
+
     const result = await apiPost(opts.comment, userToken, { is_hidden: "false" });
     if (result.success) {
       console.log("Comment unhidden successfully");
@@ -325,7 +326,7 @@ commentsCmd
   .action(async (opts) => {
     const tokens = loadTokens();
     const userToken = tokens.user_token;
-    
+
     const result = await apiDelete(opts.comment, userToken);
     if (result.success) {
       console.log("Comment deleted successfully");

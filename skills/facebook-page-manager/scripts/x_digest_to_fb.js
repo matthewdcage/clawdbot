@@ -37,19 +37,15 @@ function loadFbTokens() {
 }
 
 function birdSearchJson(query, count = 12) {
-  const out = execFileSync(
-    "bird",
-    ["search", query, "-n", String(count), "--json", "--plain"],
-    {
-      env: {
-        ...process.env,
-        AUTH_TOKEN: requireEnv("AUTH_TOKEN"),
-        CT0: requireEnv("CT0"),
-      },
-      stdio: ["ignore", "pipe", "pipe"],
-      encoding: "utf-8",
-    }
-  );
+  const out = execFileSync("bird", ["search", query, "-n", String(count), "--json", "--plain"], {
+    env: {
+      ...process.env,
+      AUTH_TOKEN: requireEnv("AUTH_TOKEN"),
+      CT0: requireEnv("CT0"),
+    },
+    stdio: ["ignore", "pipe", "pipe"],
+    encoding: "utf-8",
+  });
   return JSON.parse(out);
 }
 
@@ -182,10 +178,7 @@ async function main() {
   // Search queries
   const q1 = "clawdbot";
   const q2 = "moltbot";
-  const tweets = [
-    ...birdSearchJson(q1, 12),
-    ...birdSearchJson(q2, 12),
-  ];
+  const tweets = [...birdSearchJson(q1, 12), ...birdSearchJson(q2, 12)];
 
   const top = pickTop(tweets, 6);
   if (!top.length) throw new Error("No tweets found");
@@ -215,7 +208,14 @@ async function main() {
     result = data;
   }
 
-  console.log(JSON.stringify({ ok: true, pageId, postId: result.id || result.post_id, usedPhoto: Boolean(photoUrl) }));
+  console.log(
+    JSON.stringify({
+      ok: true,
+      pageId,
+      postId: result.id || result.post_id,
+      usedPhoto: Boolean(photoUrl),
+    }),
+  );
 }
 
 main().catch((e) => {

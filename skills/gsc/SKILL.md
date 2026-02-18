@@ -16,12 +16,14 @@ Query GSC for search analytics, indexing status, and SEO insights.
 ## Commands
 
 ### List Available Sites
+
 ```bash
 source /Users/admin/clawd/skills/gsc/.env && \
 python /Users/admin/clawd/skills/gsc/scripts/gsc_query.py sites
 ```
 
 ### Top Search Queries
+
 ```bash
 source /Users/admin/clawd/skills/gsc/.env && \
 python /Users/admin/clawd/skills/gsc/scripts/gsc_query.py top-queries \
@@ -31,6 +33,7 @@ python /Users/admin/clawd/skills/gsc/scripts/gsc_query.py top-queries \
 ```
 
 ### Top Pages by Traffic
+
 ```bash
 source /Users/admin/clawd/skills/gsc/.env && \
 python /Users/admin/clawd/skills/gsc/scripts/gsc_query.py top-pages \
@@ -40,7 +43,9 @@ python /Users/admin/clawd/skills/gsc/scripts/gsc_query.py top-pages \
 ```
 
 ### Find Low-CTR Opportunities
+
 High impressions but low click-through rate = optimization opportunities:
+
 ```bash
 source /Users/admin/clawd/skills/gsc/.env && \
 python /Users/admin/clawd/skills/gsc/scripts/gsc_query.py opportunities \
@@ -50,6 +55,7 @@ python /Users/admin/clawd/skills/gsc/scripts/gsc_query.py opportunities \
 ```
 
 ### Inspect URL Indexing Status
+
 ```bash
 source /Users/admin/clawd/skills/gsc/.env && \
 python /Users/admin/clawd/skills/gsc/scripts/gsc_query.py inspect-url \
@@ -58,6 +64,7 @@ python /Users/admin/clawd/skills/gsc/scripts/gsc_query.py inspect-url \
 ```
 
 ### List Sitemaps
+
 ```bash
 source /Users/admin/clawd/skills/gsc/.env && \
 python /Users/admin/clawd/skills/gsc/scripts/gsc_query.py sitemaps \
@@ -65,6 +72,7 @@ python /Users/admin/clawd/skills/gsc/scripts/gsc_query.py sitemaps \
 ```
 
 ### Raw Search Analytics (JSON)
+
 ```bash
 source /Users/admin/clawd/skills/gsc/.env && \
 python /Users/admin/clawd/skills/gsc/scripts/gsc_query.py search-analytics \
@@ -75,6 +83,7 @@ python /Users/admin/clawd/skills/gsc/scripts/gsc_query.py search-analytics \
 ```
 
 ## Available Dimensions
+
 - `query` - Search query
 - `page` - Landing page URL
 - `country` - Country code
@@ -82,6 +91,7 @@ python /Users/admin/clawd/skills/gsc/scripts/gsc_query.py search-analytics \
 - `date` - Date
 
 ## Metrics Returned
+
 - **clicks** - Number of clicks from search
 - **impressions** - Number of times shown in search
 - **ctr** - Click-through rate (clicks/impressions)

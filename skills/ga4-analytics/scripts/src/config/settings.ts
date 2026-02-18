@@ -2,8 +2,8 @@
  * Settings Module - Environment configuration for GA4 API
  */
 
-import { config } from 'dotenv';
-import { join } from 'path';
+import { config } from "dotenv";
+import { join } from "path";
 
 // Load .env file from current working directory
 config();
@@ -39,12 +39,12 @@ export interface ValidationResult {
  */
 export function getSettings(): Settings {
   return {
-    propertyId: process.env.GA4_PROPERTY_ID || '',
-    clientEmail: process.env.GA4_CLIENT_EMAIL || '',
-    privateKey: (process.env.GA4_PRIVATE_KEY || '').replace(/\\n/g, '\n'),
-    defaultDateRange: process.env.GA4_DEFAULT_DATE_RANGE || '30d',
-    resultsDir: join(process.cwd(), 'results'),
-    siteUrl: process.env.SEARCH_CONSOLE_SITE_URL || '',
+    propertyId: process.env.GA4_PROPERTY_ID || "",
+    clientEmail: process.env.GA4_CLIENT_EMAIL || "",
+    privateKey: (process.env.GA4_PRIVATE_KEY || "").replace(/\\n/g, "\n"),
+    defaultDateRange: process.env.GA4_DEFAULT_DATE_RANGE || "30d",
+    resultsDir: join(process.cwd(), "results"),
+    siteUrl: process.env.SEARCH_CONSOLE_SITE_URL || "",
   };
 }
 
@@ -56,15 +56,15 @@ export function validateSettings(): ValidationResult {
   const errors: string[] = [];
 
   if (!settings.propertyId) {
-    errors.push('GA4_PROPERTY_ID is required');
+    errors.push("GA4_PROPERTY_ID is required");
   }
 
   if (!settings.clientEmail) {
-    errors.push('GA4_CLIENT_EMAIL is required');
+    errors.push("GA4_CLIENT_EMAIL is required");
   }
 
   if (!settings.privateKey) {
-    errors.push('GA4_PRIVATE_KEY is required');
+    errors.push("GA4_PRIVATE_KEY is required");
   }
 
   return {

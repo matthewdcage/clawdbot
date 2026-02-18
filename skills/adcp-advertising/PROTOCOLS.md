@@ -12,6 +12,7 @@ This guide explains how to use AdCP with different transport protocols. For the 
 ## Overview
 
 AdCP works over two transport protocols:
+
 - **MCP (Model Context Protocol)** - For Claude and MCP-compatible AI assistants
 - **A2A (Agent-to-Agent)** - For Google's agent ecosystem and complex workflows
 
@@ -20,12 +21,14 @@ AdCP works over two transport protocols:
 ## When to Use Which Protocol
 
 ### Use MCP When:
+
 - Building for Claude or MCP-compatible clients
 - Direct integration with AI assistants
 - Simpler request/response workflows
 - Working in Cursor, Cline, or other MCP hosts
 
 ### Use A2A When:
+
 - Building for Google's agent ecosystem
 - Complex multi-agent workflows
 - Agent collaboration scenarios
@@ -33,28 +36,28 @@ AdCP works over two transport protocols:
 
 ## Protocol Comparison
 
-| Feature | MCP | A2A |
-|---------|-----|-----|
-| **Tasks** | Same 8 media buy tasks | Same 8 media buy tasks |
-| **Request Format** | JSON-RPC tool calls | HTTP POST with JSON |
-| **Response Format** | Unified status system | Same unified status |
-| **Authentication** | Bearer token header | API key in request |
-| **Transport** | WebSocket or SSE | HTTP with SSE streaming |
-| **Artifacts** | N/A | Agent cards, proposals |
+| Feature             | MCP                    | A2A                     |
+| ------------------- | ---------------------- | ----------------------- |
+| **Tasks**           | Same 8 media buy tasks | Same 8 media buy tasks  |
+| **Request Format**  | JSON-RPC tool calls    | HTTP POST with JSON     |
+| **Response Format** | Unified status system  | Same unified status     |
+| **Authentication**  | Bearer token header    | API key in request      |
+| **Transport**       | WebSocket or SSE       | HTTP with SSE streaming |
+| **Artifacts**       | N/A                    | Agent cards, proposals  |
 
 ## MCP Integration
 
 ### Setup
 
 ```javascript
-import { createMCPClient } from '@adcp/client';
+import { createMCPClient } from "@adcp/client";
 
 const client = createMCPClient({
-  url: 'https://agent.example.com/mcp',
+  url: "https://agent.example.com/mcp",
   auth: {
-    type: 'bearer',
-    token: 'your-auth-token'
-  }
+    type: "bearer",
+    token: "your-auth-token",
+  },
 });
 ```
 
@@ -63,13 +66,13 @@ const client = createMCPClient({
 ```javascript
 // MCP tool call format
 const result = await client.callTool({
-  name: 'get_products',
+  name: "get_products",
   arguments: {
-    brief: 'Display advertising for tech startup',
+    brief: "Display advertising for tech startup",
     brand_manifest: {
-      url: 'https://startup.com'
-    }
-  }
+      url: "https://startup.com",
+    },
+  },
 });
 
 // Response is the task result directly
@@ -92,14 +95,14 @@ await client.callTool({ name: 'create_media_buy', arguments: {...} });
 ### Setup
 
 ```javascript
-import { createA2AClient } from '@adcp/client';
+import { createA2AClient } from "@adcp/client";
 
 const client = createA2AClient({
-  agentUrl: 'https://agent.example.com',
-  agentId: 'sales-agent-001',
+  agentUrl: "https://agent.example.com",
+  agentId: "sales-agent-001",
   auth: {
-    apiKey: 'your-api-key'
-  }
+    apiKey: "your-api-key",
+  },
 });
 ```
 
@@ -108,13 +111,13 @@ const client = createA2AClient({
 ```javascript
 // A2A uses call_adcp_agent wrapper
 const result = await client.executeTask({
-  task: 'get_products',
+  task: "get_products",
   params: {
-    brief: 'Display advertising for tech startup',
+    brief: "Display advertising for tech startup",
     brand_manifest: {
-      url: 'https://startup.com'
-    }
-  }
+      url: "https://startup.com",
+    },
+  },
 });
 
 // Response includes agent card and task result
@@ -130,10 +133,10 @@ A2A agents expose metadata via agent cards:
 // Fetch agent card
 const card = await client.getAgentCard();
 
-console.log(card.name);                    // Agent name
-console.log(card.description);             // Agent description
-console.log(card.capabilities);            // Supported protocols
-console.log(card.portfolio.publishers);    // Publisher portfolio
+console.log(card.name); // Agent name
+console.log(card.description); // Agent description
+console.log(card.capabilities); // Supported protocols
+console.log(card.portfolio.publishers); // Publisher portfolio
 ```
 
 ### Streaming Responses (SSE)
@@ -164,14 +167,14 @@ Both protocols use the same status system for task responses:
 ```typescript
 {
   status: "completed" | "pending" | "failed";
-  
+
   // If completed
   data?: {...};
-  
+
   // If pending
   task_id?: string;
   estimated_completion?: string;
-  
+
   // If failed
   error?: {
     code: string;
@@ -185,26 +188,26 @@ Both protocols use the same status system for task responses:
 
 ```javascript
 async function waitForCompletion(taskId, protocol) {
-  let status = 'pending';
-  
-  while (status === 'pending') {
-    await sleep(5000);  // Wait 5 seconds
-    
-    if (protocol === 'mcp') {
+  let status = "pending";
+
+  while (status === "pending") {
+    await sleep(5000); // Wait 5 seconds
+
+    if (protocol === "mcp") {
       const result = await mcpClient.callTool({
-        name: 'get_task_status',
-        arguments: { task_id: taskId }
+        name: "get_task_status",
+        arguments: { task_id: taskId },
       });
       status = result.status;
     } else {
       const result = await a2aClient.executeTask({
-        task: 'get_task_status',
-        params: { task_id: taskId }
+        task: "get_task_status",
+        params: { task_id: taskId },
       });
       status = result.task_result.status;
     }
   }
-  
+
   return status;
 }
 ```
@@ -216,20 +219,20 @@ async function waitForCompletion(taskId, protocol) {
 ```javascript
 // Bearer token in header
 const client = createMCPClient({
-  url: 'https://agent.example.com/mcp',
+  url: "https://agent.example.com/mcp",
   auth: {
-    type: 'bearer',
-    token: 'your-auth-token'
-  }
+    type: "bearer",
+    token: "your-auth-token",
+  },
 });
 
 // JWT authentication
 const client = createMCPClient({
-  url: 'https://agent.example.com/mcp',
+  url: "https://agent.example.com/mcp",
   auth: {
-    type: 'jwt',
-    token: 'your-jwt-token'
-  }
+    type: "jwt",
+    token: "your-jwt-token",
+  },
 });
 ```
 
@@ -238,19 +241,19 @@ const client = createMCPClient({
 ```javascript
 // API key
 const client = createA2AClient({
-  agentUrl: 'https://agent.example.com',
+  agentUrl: "https://agent.example.com",
   auth: {
-    apiKey: 'your-api-key'
-  }
+    apiKey: "your-api-key",
+  },
 });
 
 // OAuth
 const client = createA2AClient({
-  agentUrl: 'https://agent.example.com',
+  agentUrl: "https://agent.example.com",
   auth: {
-    type: 'oauth',
-    accessToken: 'your-access-token'
-  }
+    type: "oauth",
+    accessToken: "your-access-token",
+  },
 });
 ```
 
@@ -302,14 +305,14 @@ Always call `get_adcp_capabilities` first, regardless of protocol:
 ```javascript
 // MCP
 const caps = await mcpClient.callTool({
-  name: 'get_adcp_capabilities',
-  arguments: {}
+  name: "get_adcp_capabilities",
+  arguments: {},
 });
 
 // A2A
 const caps = await a2aClient.executeTask({
-  task: 'get_adcp_capabilities',
-  params: {}
+  task: "get_adcp_capabilities",
+  params: {},
 });
 ```
 
@@ -344,7 +347,7 @@ async function retryOperation(fn, maxRetries = 3) {
       return await fn();
     } catch (error) {
       if (i === maxRetries - 1) throw error;
-      await sleep(Math.pow(2, i) * 1000);  // Exponential backoff
+      await sleep(Math.pow(2, i) * 1000); // Exponential backoff
     }
   }
 }
@@ -361,8 +364,8 @@ OpenClaw agents can use either protocol seamlessly:
 export async function publishAd(brief, brandUrl) {
   // Detect available protocol
   const protocol = detectProtocol();
-  
-  if (protocol === 'mcp') {
+
+  if (protocol === "mcp") {
     return await publishViaMCP(brief, brandUrl);
   } else {
     return await publishViaA2A(brief, brandUrl);
@@ -371,10 +374,10 @@ export async function publishAd(brief, brandUrl) {
 
 function detectProtocol() {
   // Check if MCP client is available
-  if (typeof mcpClient !== 'undefined') {
-    return 'mcp';
+  if (typeof mcpClient !== "undefined") {
+    return "mcp";
   }
-  return 'a2a';
+  return "a2a";
 }
 ```
 
@@ -384,32 +387,33 @@ Both protocols work with the test agent:
 
 ```javascript
 // MCP endpoint
-const mcpUrl = 'https://test-agent.adcontextprotocol.org/mcp';
+const mcpUrl = "https://test-agent.adcontextprotocol.org/mcp";
 
 // A2A endpoint
-const a2aUrl = 'https://test-agent.adcontextprotocol.org';
+const a2aUrl = "https://test-agent.adcontextprotocol.org";
 
 // Auth token (same for both)
-const authToken = '1v8tAhASaUYYp4odoQ1PnMpdqNaMiTrCRqYo9OJp6IQ';
+const authToken = "1v8tAhASaUYYp4odoQ1PnMpdqNaMiTrCRqYo9OJp6IQ";
 ```
 
 ## Summary
 
-| Aspect | MCP | A2A |
-|--------|-----|-----|
-| **Use Case** | AI assistants | Agent workflows |
-| **Complexity** | Simpler | More features |
-| **Format** | JSON-RPC | HTTP + JSON |
-| **Tasks** | Same 8 tasks | Same 8 tasks |
-| **Auth** | Bearer token | API key |
-| **Streaming** | Limited | Full SSE support |
-| **Artifacts** | No | Yes (agent cards) |
+| Aspect         | MCP           | A2A               |
+| -------------- | ------------- | ----------------- |
+| **Use Case**   | AI assistants | Agent workflows   |
+| **Complexity** | Simpler       | More features     |
+| **Format**     | JSON-RPC      | HTTP + JSON       |
+| **Tasks**      | Same 8 tasks  | Same 8 tasks      |
+| **Auth**       | Bearer token  | API key           |
+| **Streaming**  | Limited       | Full SSE support  |
+| **Artifacts**  | No            | Yes (agent cards) |
 
 **Key Takeaway**: The advertising functionality is identical. Choose based on your integration environment.
 
 ## Additional Resources
 
 ### Official AdCP Protocol Documentation
+
 - **Protocol Comparison**: https://docs.adcontextprotocol.org/docs/building/understanding/protocol-comparison
 - **MCP Integration Guide**: https://docs.adcontextprotocol.org/docs/building/integration/mcp-guide
 - **A2A Integration Guide**: https://docs.adcontextprotocol.org/docs/building/integration/a2a-guide

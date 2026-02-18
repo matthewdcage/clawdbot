@@ -2,9 +2,9 @@
  * Search Console API - Google Search Console data retrieval
  */
 
-import { getSearchConsoleClient, getSiteUrl } from '../core/client.js';
-import { saveResult } from '../core/storage.js';
-import { getSettings } from '../config/settings.js';
+import { getSettings } from "../config/settings.js";
+import { getSearchConsoleClient, getSiteUrl } from "../core/client.js";
+import { saveResult } from "../core/storage.js";
 
 /**
  * Date range configuration for Search Console
@@ -48,13 +48,15 @@ export interface SearchAnalyticsResponse {
  * Parse shorthand date range (e.g., "7d", "30d") to Search Console date format
  * Note: Search Console requires YYYY-MM-DD format, not GA4's "NdaysAgo" format
  */
-export function parseSearchConsoleDateRange(range: string | SearchConsoleDateRange | undefined): SearchConsoleDateRange {
+export function parseSearchConsoleDateRange(
+  range: string | SearchConsoleDateRange | undefined,
+): SearchConsoleDateRange {
   if (!range) {
     const settings = getSettings();
     range = settings.defaultDateRange;
   }
 
-  if (typeof range === 'object') {
+  if (typeof range === "object") {
     return range;
   }
 
@@ -67,8 +69,8 @@ export function parseSearchConsoleDateRange(range: string | SearchConsoleDateRan
     startDate.setDate(startDate.getDate() - days);
 
     return {
-      startDate: startDate.toISOString().split('T')[0],
-      endDate: endDate.toISOString().split('T')[0],
+      startDate: startDate.toISOString().split("T")[0],
+      endDate: endDate.toISOString().split("T")[0],
     };
   }
 
@@ -78,22 +80,18 @@ export function parseSearchConsoleDateRange(range: string | SearchConsoleDateRan
   startDate.setDate(startDate.getDate() - 30);
 
   return {
-    startDate: startDate.toISOString().split('T')[0],
-    endDate: endDate.toISOString().split('T')[0],
+    startDate: startDate.toISOString().split("T")[0],
+    endDate: endDate.toISOString().split("T")[0],
   };
 }
 
 /**
  * Query search analytics data
  */
-export async function querySearchAnalytics(options: SearchAnalyticsOptions): Promise<SearchAnalyticsResponse> {
-  const {
-    dimensions = ['query'],
-    dateRange,
-    rowLimit = 1000,
-    startRow = 0,
-    save = true,
-  } = options;
+export async function querySearchAnalytics(
+  options: SearchAnalyticsOptions,
+): Promise<SearchAnalyticsResponse> {
+  const { dimensions = ["query"], dateRange, rowLimit = 1000, startRow = 0, save = true } = options;
 
   const client = getSearchConsoleClient();
   const siteUrl = getSiteUrl();
@@ -113,9 +111,9 @@ export async function querySearchAnalytics(options: SearchAnalyticsOptions): Pro
   const result = response.data as SearchAnalyticsResponse;
 
   if (save) {
-    const operation = dimensions.join('_') || 'query';
-    const extra = typeof dateRange === 'string' ? dateRange : undefined;
-    saveResult(result, 'searchconsole', operation, extra);
+    const operation = dimensions.join("_") || "query";
+    const extra = typeof dateRange === "string" ? dateRange : undefined;
+    saveResult(result, "searchconsole", operation, extra);
   }
 
   return result;
@@ -124,9 +122,11 @@ export async function querySearchAnalytics(options: SearchAnalyticsOptions): Pro
 /**
  * Get top search queries
  */
-export async function getTopQueries(dateRange?: string | SearchConsoleDateRange): Promise<SearchAnalyticsResponse> {
+export async function getTopQueries(
+  dateRange?: string | SearchConsoleDateRange,
+): Promise<SearchAnalyticsResponse> {
   return querySearchAnalytics({
-    dimensions: ['query'],
+    dimensions: ["query"],
     dateRange,
     rowLimit: 100,
   });
@@ -135,9 +135,11 @@ export async function getTopQueries(dateRange?: string | SearchConsoleDateRange)
 /**
  * Get top pages by search performance
  */
-export async function getTopPages(dateRange?: string | SearchConsoleDateRange): Promise<SearchAnalyticsResponse> {
+export async function getTopPages(
+  dateRange?: string | SearchConsoleDateRange,
+): Promise<SearchAnalyticsResponse> {
   return querySearchAnalytics({
-    dimensions: ['page'],
+    dimensions: ["page"],
     dateRange,
     rowLimit: 100,
   });
@@ -146,9 +148,11 @@ export async function getTopPages(dateRange?: string | SearchConsoleDateRange): 
 /**
  * Get search performance by device type
  */
-export async function getDevicePerformance(dateRange?: string | SearchConsoleDateRange): Promise<SearchAnalyticsResponse> {
+export async function getDevicePerformance(
+  dateRange?: string | SearchConsoleDateRange,
+): Promise<SearchAnalyticsResponse> {
   return querySearchAnalytics({
-    dimensions: ['device'],
+    dimensions: ["device"],
     dateRange,
   });
 }
@@ -156,9 +160,11 @@ export async function getDevicePerformance(dateRange?: string | SearchConsoleDat
 /**
  * Get search performance by country
  */
-export async function getCountryPerformance(dateRange?: string | SearchConsoleDateRange): Promise<SearchAnalyticsResponse> {
+export async function getCountryPerformance(
+  dateRange?: string | SearchConsoleDateRange,
+): Promise<SearchAnalyticsResponse> {
   return querySearchAnalytics({
-    dimensions: ['country'],
+    dimensions: ["country"],
     dateRange,
     rowLimit: 50,
   });
@@ -167,9 +173,11 @@ export async function getCountryPerformance(dateRange?: string | SearchConsoleDa
 /**
  * Get search appearance data (rich results, AMP, etc.)
  */
-export async function getSearchAppearance(dateRange?: string | SearchConsoleDateRange): Promise<SearchAnalyticsResponse> {
+export async function getSearchAppearance(
+  dateRange?: string | SearchConsoleDateRange,
+): Promise<SearchAnalyticsResponse> {
   return querySearchAnalytics({
-    dimensions: ['searchAppearance'],
+    dimensions: ["searchAppearance"],
     dateRange,
   });
 }

@@ -2,9 +2,9 @@
  * Storage Module - Auto-save results to JSON files with metadata
  */
 
-import { existsSync, mkdirSync, writeFileSync, readFileSync, readdirSync } from 'fs';
-import { join } from 'path';
-import { getSettings } from '../config/settings.js';
+import { existsSync, mkdirSync, writeFileSync, readFileSync, readdirSync } from "fs";
+import { join } from "path";
+import { getSettings } from "../config/settings.js";
 
 /**
  * Metadata wrapper for saved results
@@ -31,11 +31,11 @@ export interface SavedResult<T = unknown> {
 function getTimestamp(): string {
   const now = new Date();
   const year = now.getFullYear();
-  const month = String(now.getMonth() + 1).padStart(2, '0');
-  const day = String(now.getDate()).padStart(2, '0');
-  const hours = String(now.getHours()).padStart(2, '0');
-  const minutes = String(now.getMinutes()).padStart(2, '0');
-  const seconds = String(now.getSeconds()).padStart(2, '0');
+  const month = String(now.getMonth() + 1).padStart(2, "0");
+  const day = String(now.getDate()).padStart(2, "0");
+  const hours = String(now.getHours()).padStart(2, "0");
+  const minutes = String(now.getMinutes()).padStart(2, "0");
+  const seconds = String(now.getSeconds()).padStart(2, "0");
   return `${year}${month}${day}_${hours}${minutes}${seconds}`;
 }
 
@@ -43,7 +43,7 @@ function getTimestamp(): string {
  * Sanitize string for use in filename
  */
 function sanitizeFilename(str: string): string {
-  return str.replace(/[^a-zA-Z0-9_-]/g, '_').toLowerCase();
+  return str.replace(/[^a-zA-Z0-9_-]/g, "_").toLowerCase();
 }
 
 /**
@@ -59,7 +59,7 @@ export function saveResult<T>(
   data: T,
   category: string,
   operation: string,
-  extraInfo?: string
+  extraInfo?: string,
 ): string {
   const settings = getSettings();
   const categoryDir = join(settings.resultsDir, category);
@@ -72,7 +72,7 @@ export function saveResult<T>(
   // Build filename
   const timestamp = getTimestamp();
   const sanitizedOperation = sanitizeFilename(operation);
-  const sanitizedExtra = extraInfo ? `__${sanitizeFilename(extraInfo)}` : '';
+  const sanitizedExtra = extraInfo ? `__${sanitizeFilename(extraInfo)}` : "";
   const filename = `${timestamp}__${sanitizedOperation}${sanitizedExtra}.json`;
   const filepath = join(categoryDir, filename);
 
@@ -89,7 +89,7 @@ export function saveResult<T>(
   };
 
   // Write to file
-  writeFileSync(filepath, JSON.stringify(result, null, 2), 'utf-8');
+  writeFileSync(filepath, JSON.stringify(result, null, 2), "utf-8");
 
   return filepath;
 }
@@ -106,7 +106,7 @@ export function loadResult<T = unknown>(filepath: string): SavedResult<T> | null
   }
 
   try {
-    const content = readFileSync(filepath, 'utf-8');
+    const content = readFileSync(filepath, "utf-8");
     return JSON.parse(content) as SavedResult<T>;
   } catch {
     return null;
@@ -129,12 +129,12 @@ export function listResults(category: string, limit?: number): string[] {
   }
 
   const files = readdirSync(categoryDir)
-    .filter(f => f.endsWith('.json'))
-    .map(f => join(categoryDir, f))
+    .filter((f) => f.endsWith(".json"))
+    .map((f) => join(categoryDir, f))
     .sort((a, b) => {
       // Sort by filename (which starts with timestamp) descending
-      const nameA = a.split('/').pop() || '';
-      const nameB = b.split('/').pop() || '';
+      const nameA = a.split("/").pop() || "";
+      const nameB = b.split("/").pop() || "";
       return nameB.localeCompare(nameA);
     });
 
@@ -154,13 +154,13 @@ export function listResults(category: string, limit?: number): string[] {
  */
 export function getLatestResult<T = unknown>(
   category: string,
-  operation?: string
+  operation?: string,
 ): SavedResult<T> | null {
   let files = listResults(category);
 
   if (operation) {
     const sanitized = sanitizeFilename(operation);
-    files = files.filter(f => f.includes(`__${sanitized}`));
+    files = files.filter((f) => f.includes(`__${sanitized}`));
   }
 
   if (files.length === 0) {

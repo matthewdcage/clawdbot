@@ -3,7 +3,21 @@ name: marketing-mode
 description: "Marketing Mode combines 23 comprehensive marketing skills covering strategy, psychology, content, SEO, conversion optimization, and paid growth. Use when users need marketing strategy, copywriting, SEO help, conversion optimization, paid advertising, or any marketing tactic."
 metadata:
   version: 1.0.0
-  tags: ["marketing", "growth", "seo", "copywriting", "cro", "paid-ads", "strategy", "psychology", "launch", "pricing", "email", "social"]
+  tags:
+    [
+      "marketing",
+      "growth",
+      "seo",
+      "copywriting",
+      "cro",
+      "paid-ads",
+      "strategy",
+      "psychology",
+      "launch",
+      "pricing",
+      "email",
+      "social",
+    ]
   clawdbot:
     mode:
       name: "Mark the Marketer"
@@ -37,6 +51,7 @@ When users need marketing help, activate this mode. Ask clarifying questions abo
 ## Marketing Ideas (140+ Proven Approaches)
 
 ### Content & SEO
+
 - Easy Keyword Ranking
 - SEO Audit
 - Glossary Marketing
@@ -49,11 +64,13 @@ When users need marketing help, activate this mode. Ask clarifying questions abo
 - Parasite SEO
 
 ### Competitor & Comparison
+
 - Competitor Comparison Pages
 - Marketing Jiu-Jitsu
 - Competitive Ad Research
 
 ### Free Tools & Engineering
+
 - Side Projects as Marketing
 - Engineering as Marketing
 - Importers as Marketing
@@ -65,6 +82,7 @@ When users need marketing help, activate this mode. Ask clarifying questions abo
 - Public APIs
 
 ### Paid Advertising
+
 - Podcast Advertising
 - Pre-targeting Ads
 - Facebook Ads
@@ -79,6 +97,7 @@ When users need marketing help, activate this mode. Ask clarifying questions abo
 - Click-to-Messenger Ads
 
 ### Social Media & Community
+
 - Community Marketing
 - Quora Marketing
 - Reddit Keyword Research
@@ -91,6 +110,7 @@ When users need marketing help, activate this mode. Ask clarifying questions abo
 - Comment Marketing
 
 ### Email Marketing
+
 - Mistake Email Marketing
 - Reactivation Emails
 - Founder Welcome Email
@@ -102,6 +122,7 @@ When users need marketing help, activate this mode. Ask clarifying questions abo
 - Trial Reactivation
 
 ### Partnerships & Programs
+
 - Affiliate Discovery Through Backlinks
 - Influencer Whitelisting
 - Reseller Programs
@@ -115,6 +136,7 @@ When users need marketing help, activate this mode. Ask clarifying questions abo
 - Community Sponsorship
 
 ### Events & Speaking
+
 - Live Webinars
 - Virtual Summits
 - Roadshows
@@ -125,12 +147,14 @@ When users need marketing help, activate this mode. Ask clarifying questions abo
 - Conference Sponsorship
 
 ### PR & Media
+
 - Media Acquisitions as Marketing
 - Press Coverage
 - Fundraising PR
 - Documentaries
 
 ### Launches & Promotions
+
 - Black Friday Promotions
 - Product Hunt Launch
 - Early-Access Referrals
@@ -143,6 +167,7 @@ When users need marketing help, activate this mode. Ask clarifying questions abo
 - Lifetime Deals
 
 ### Product-Led Growth
+
 - Powered By Marketing
 - Free Migrations
 - Contract Buyouts
@@ -155,6 +180,7 @@ When users need marketing help, activate this mode. Ask clarifying questions abo
 - Onboarding Optimization
 
 ### Unconventional & Creative
+
 - Awards as Marketing
 - Challenges as Marketing
 - Reality TV Marketing
@@ -170,6 +196,7 @@ When users need marketing help, activate this mode. Ask clarifying questions abo
 - Humor Marketing
 
 ### Platforms & Marketplaces
+
 - Open Source as Marketing
 - App Store Optimization
 - App Marketplaces
@@ -182,12 +209,14 @@ When users need marketing help, activate this mode. Ask clarifying questions abo
 - Price Localization
 
 ### Developer & Technical
+
 - Investor Marketing
 - Certifications
 - Support as Marketing
 - Developer Relations
 
 ### Audience-Specific
+
 - Two-Sided Referrals
 - Podcast Tours
 - Customer Language
@@ -197,6 +226,7 @@ When users need marketing help, activate this mode. Ask clarifying questions abo
 ## Launch Strategy (5-Phase Framework)
 
 ### Phase 1: Internal (Pre-Launch)
+
 - Use product internally first
 - Find bugs in real use cases
 - Build initial case studies
@@ -204,24 +234,28 @@ When users need marketing help, activate this mode. Ask clarifying questions abo
 - Set up analytics and tracking
 
 ### Phase 2: Alpha (Private Beta)
+
 - Invite existing customers and warm leads
 - Get feedback and testimonials
 - Refine positioning based on response
 - Build waitlist
 
 ### Phase 3: Beta (Public Preview)
+
 - Broader access with invite codes
 - Collect more testimonials
 - Refine pricing and packaging
 - Build SEO content
 
 ### Phase 4: Early Access (Launch Prep)
+
 - Public waitlist opening
 - Special launch pricing
 - Affiliate/partner outreach
 - Press and analyst outreach
 
 ### Phase 5: Full Launch
+
 - General availability
 - Full promotional push
 - Customer success stories
@@ -232,23 +266,27 @@ When users need marketing help, activate this mode. Ask clarifying questions abo
 ## Pricing Strategy
 
 ### Research Methods
+
 - Competitor pricing analysis
 - Value-based pricing models
 - Willingness-to-pay surveys
 - A/B testing for optimization
 
 ### Tier Structure
+
 - Free tier (awareness)
 - Pro tier (core value)
 - Enterprise tier (scale + support)
 
 ### Value Metrics
+
 - Per-seat pricing
 - Usage-based pricing
 - Feature-based tiers
 - Outcome-based pricing
 
 ### Monetization Optimization
+
 - Annual vs. monthly discounts
 - Upgrade paths
 - Churn prevention pricing
@@ -261,121 +299,145 @@ When users need marketing help, activate this mode. Ask clarifying questions abo
 ## Foundational Thinking Models
 
 ### First Principles
+
 Break problems down to basic truths. Don't copy competitors—ask "why" repeatedly to find root causes.
 
 **Marketing application**: Don't do content marketing because competitors do. Ask why, what problem it solves, if there's a better solution.
 
 ### Jobs to Be Done (JTBD)
+
 People "hire" products to get a job done. Focus on outcomes, not features.
 
 **Marketing application**: A drill buyer wants a hole, not a drill. Frame around the job accomplished.
 
 ### Circle of Competence
+
 Know what you're good at and stay within it. Double down on genuine expertise.
 
 **Marketing application**: Don't chase every channel. Focus on where you have real competitive advantage.
 
 ### Inversion
+
 Ask what would guarantee failure, then avoid those things.
 
 **Marketing application**: List everything that would make a campaign fail, then systematically prevent each.
 
 ### Occam's Razor
+
 Simpler explanations are usually correct. Avoid overcomplicating strategies.
 
 **Marketing application**: If conversions dropped, check obvious first (broken form, slow page) before complex attribution.
 
 ### Pareto Principle (80/20)
+
 80% of results come from 20% of efforts. Find and focus on the vital few.
 
 **Marketing application**: Find channels driving most results. Cut or reduce the rest.
 
 ### Hick's Law
+
 Decision time increases with options. More choices = more abandonment.
 
 **Marketing application**: One clear CTA beats three. Fewer form fields = higher conversion.
 
 ### AIDA Funnel
+
 Attention → Interest → Desire → Action
 
 **Marketing application**: Structure pages to move through each stage. Capture attention before building desire.
 
 ### Law of Diminishing Returns
+
 After a point, additional investment yields progressively smaller gains.
 
 **Marketing application**: The 10th blog post won't have the same impact as the first. Diversify channels.
 
 ### Commitment & Consistency
+
 Once people commit to something, they want to stay consistent.
 
 **Marketing application**: Small commitments first (email signup) lead to larger ones (paid subscription).
 
 ### Reciprocity Principle
+
 Give first. People feel obligated to return favors.
 
 **Marketing application**: Free content, tools, and freemium models create reciprocal obligation.
 
 ### Scarcity & Urgency
+
 Limited availability increases perceived value.
 
 **Marketing application**: Limited-time offers, low-stock warnings. Only use when genuine.
 
 ### Loss Aversion
+
 Losses feel twice as painful as equivalent gains feel good.
 
 **Marketing application**: "Don't miss out" beats "You could gain." Frame in terms of what they'll lose.
 
 ### Anchoring Effect
+
 First number heavily influences subsequent judgments.
 
 **Marketing application**: Show higher price first (original, competitor, enterprise) to anchor expectations.
 
 ### Paradox of Choice
+
 Too many options overwhelm. Fewer choices lead to more decisions.
 
 **Marketing application**: Three pricing tiers. Recommend a single "best for most" option.
 
 ### Endowment Effect
+
 People value things more once they own them.
 
 **Marketing application**: Free trials, samples, freemium models let customers "own" the product.
 
 ### IKEA Effect
+
 People value things they put effort into creating.
 
 **Marketing application**: Let customers customize, configure, build. Their investment increases commitment.
 
 ### Mere Exposure Effect
+
 Familiarity breeds liking. Consistent presence builds preference.
 
 **Marketing application**: Repetition across channels creates comfort and trust.
 
 ### Social Proof / Bandwagon Effect
+
 People follow what others are doing. Popularity signals quality.
 
 **Marketing application**: Show customer counts, testimonials, "trending" indicators.
 
 ### Prospect Theory / Loss Aversion
+
 People avoid actions that might cause regret.
 
 **Marketing application**: Money-back guarantees, free trials reduce regret fear. Address concerns directly.
 
 ### Zeigarnik Effect
+
 Unfinished tasks occupy the mind. Open loops create tension.
 
 **Marketing application**: "You're 80% done" creates pull to finish. Incomplete profiles, abandoned carts.
 
 ### Status-Quo Bias
+
 People prefer current state. Change feels risky.
 
 **Marketing application**: Reduce friction. Make transition feel safe. "Import in one click."
 
 ### Default Effect
+
 People accept pre-selected options. Defaults are powerful.
 
 **Marketing application**: Pre-select the plan you want customers to choose. Opt-out beats opt-in.
 
 ### Peak-End Rule
+
 People judge experiences by the peak (best/worst) and end, not average.
 
 **Marketing application**: Design memorable peaks and strong endings. Thank you pages matter.
@@ -387,6 +449,7 @@ People judge experiences by the peak (best/worst) and end, not average.
 ## SEO Audit Framework
 
 ### Priority Order
+
 1. **Crawlability & Indexation** - Can Google find and index pages?
 2. **Technical Foundations** - Is the site fast and functional?
 3. **On-Page Optimization** - Is content optimized?
@@ -396,18 +459,21 @@ People judge experiences by the peak (best/worst) and end, not average.
 ### Technical SEO Checklist
 
 **Crawlability**
+
 - Robots.txt not blocking important pages
 - XML sitemap accessible and updated
 - Site architecture within 3 clicks of homepage
 - No orphan pages
 
 **Indexation**
+
 - No accidental noindex on important pages
 - Proper canonical tags (self-referencing)
 - No redirect chains
 - No soft 404s
 
 **Core Web Vitals**
+
 - LCP < 2.5s
 - INP < 200ms
 - CLS < 0.1
@@ -415,12 +481,14 @@ People judge experiences by the peak (best/worst) and end, not average.
 - Images optimized
 
 **On-Page**
+
 - Title tags optimized (60 chars, keyword placement)
 - Meta descriptions compelling (155 chars)
 - Header hierarchy (H1 → H2 → H3)
 - Internal linking to priority pages
 
 **E-E-A-T**
+
 - Author expertise demonstrated
 - Clear sourcing and citations
 - Regular content updates
@@ -459,18 +527,23 @@ People judge experiences by the peak (best/worst) and end, not average.
 ## Copywriting Frameworks
 
 ### AIDA
+
 Attention → Interest → Desire → Action
 
 ### PAS
+
 Problem → Agitation → Solution
 
 ### Before/After/Bridge
+
 Current state → Problem → Your solution → Transformation
 
 ### ACCA
+
 Awareness → Comprehension → Conviction → Action
 
 ### Hero's Journey
+
 Customer as hero on a journey with your product as guide
 
 ---
@@ -490,6 +563,7 @@ Customer as hero on a journey with your product as guide
 ## Social Content Strategy
 
 ### Hook Templates
+
 - Question hooks
 - Number hooks
 - Story hooks
@@ -497,6 +571,7 @@ Customer as hero on a journey with your product as guide
 - Controversy hooks
 
 ### Platform Optimization
+
 - LinkedIn: Professional, thought leadership
 - X/Twitter: Bite-sized, threads
 - Instagram: Visual + captions
@@ -535,24 +610,28 @@ Customer as hero on a journey with your product as guide
 ## Funnel Optimization
 
 ### Signup Flow
+
 - Minimize fields (email only first)
 - Social auth options
 - Progress indicators
 - Clear value proposition
 
 ### Form CRO
+
 - Progressive profiling
 - Inline validation
 - Smart defaults
 - Auto-save drafts
 
 ### Onboarding
+
 - Aha moment identification
 - Progress tracking
 - Feature discovery
 - Milestone celebrations
 
 ### A/B Test Setup
+
 - Hypothesis framework
 - Sample size calculations
 - Statistical significance (95%+ confidence)
@@ -565,24 +644,28 @@ Customer as hero on a journey with your product as guide
 ## Channel Strategy
 
 ### Google Ads
+
 - Brand terms protection
 - Competitor targeting
 - Solution keywords
 - Remarketing lists
 
 ### Meta/Facebook Ads
+
 - Detailed targeting
 - Creative testing
 - Lookalike audiences
 - Retargeting
 
 ### LinkedIn Ads
+
 - Job titles/functions
 - Company size targeting
 - Industry filters
 - B2B intent
 
 ### Analytics & Tracking
+
 - UTM parameters (consistent naming)
 - GA4 events for goals
 - GTM container setup
@@ -593,6 +676,7 @@ Customer as hero on a journey with your product as guide
 ## Referral Program Design
 
 ### Viral Mechanics
+
 - Two-sided rewards
 - Milestone celebrations
 - Fraud detection rules
@@ -603,6 +687,7 @@ Customer as hero on a journey with your product as guide
 ## Free Tool Strategy
 
 ### Tool Categories
+
 - Calculators
 - Analyzers
 - Generators
@@ -610,6 +695,7 @@ Customer as hero on a journey with your product as guide
 - Templates
 
 ### SEO Value
+
 - Keyword targeting
 - Backlink attraction
 - Shareable results
@@ -632,34 +718,37 @@ Customer as hero on a journey with your product as guide
 
 ## Marketing Challenges → Relevant Frameworks
 
-| Challenge | Start Here |
-|-----------|------------|
-| Low conversions | AIDA, Hick's Law, BJ Fogg |
-| Pricing objections | Anchoring, Mental Accounting, Loss Aversion |
-| SEO issues | Technical SEO audit, Programmatic SEO |
-| Copy not converting | PAS, Copy editing sweeps, A/B tests |
-| Email performance | Welcome series, Segmentation, Send time optimization |
-| No traffic | SEO audit, Content strategy, Programmatic SEO |
-| High churn | Onboarding CRO, Win-back sequences |
-| Low engagement | Social proof, Reciprocity, Consistency |
-| Unclear messaging | Value proposition, Positioning, Differentiation |
+| Challenge           | Start Here                                           |
+| ------------------- | ---------------------------------------------------- |
+| Low conversions     | AIDA, Hick's Law, BJ Fogg                            |
+| Pricing objections  | Anchoring, Mental Accounting, Loss Aversion          |
+| SEO issues          | Technical SEO audit, Programmatic SEO                |
+| Copy not converting | PAS, Copy editing sweeps, A/B tests                  |
+| Email performance   | Welcome series, Segmentation, Send time optimization |
+| No traffic          | SEO audit, Content strategy, Programmatic SEO        |
+| High churn          | Onboarding CRO, Win-back sequences                   |
+| Low engagement      | Social proof, Reciprocity, Consistency               |
+| Unclear messaging   | Value proposition, Positioning, Differentiation      |
 
 ---
 
 ## Questions to Ask (Marketing Discovery)
 
 **About Product & Audience**
+
 - What's your product and who's the target customer?
 - What's your current stage (pre-launch → scale)?
 - What are your main marketing goals?
 - What's your budget and team size?
 
 **About Current State**
+
 - What have you tried that worked or didn't?
 - What are your competitors doing well?
 - Where are you losing customers in the funnel?
 
 **About Goals**
+
 - What metrics matter most (traffic, leads, revenue)?
 - What's your timeline?
 - What's your competitive advantage?

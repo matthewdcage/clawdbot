@@ -2,9 +2,9 @@
  * Reports API - Standard GA4 report generation
  */
 
-import { getClient, getPropertyId } from '../core/client.js';
-import { saveResult } from '../core/storage.js';
-import { getSettings } from '../config/settings.js';
+import { getSettings } from "../config/settings.js";
+import { getClient, getPropertyId } from "../core/client.js";
+import { saveResult } from "../core/storage.js";
 
 /**
  * Date range configuration
@@ -50,7 +50,7 @@ export function parseDateRange(range: string | DateRange | undefined): DateRange
     range = settings.defaultDateRange;
   }
 
-  if (typeof range === 'object') {
+  if (typeof range === "object") {
     return range;
   }
 
@@ -60,14 +60,14 @@ export function parseDateRange(range: string | DateRange | undefined): DateRange
     const days = parseInt(match[1], 10);
     return {
       startDate: `${days}daysAgo`,
-      endDate: 'today',
+      endDate: "today",
     };
   }
 
   // Default to 30 days
   return {
-    startDate: '30daysAgo',
-    endDate: 'today',
+    startDate: "30daysAgo",
+    endDate: "today",
   };
 }
 
@@ -75,15 +75,7 @@ export function parseDateRange(range: string | DateRange | undefined): DateRange
  * Run a custom GA4 report
  */
 export async function runReport(options: ReportOptions): Promise<ReportResponse> {
-  const {
-    dimensions,
-    metrics,
-    dateRange,
-    filters,
-    orderBy,
-    limit,
-    save = true,
-  } = options;
+  const { dimensions, metrics, dateRange, filters, orderBy, limit, save = true } = options;
 
   const client = getClient();
   const property = getPropertyId();
@@ -92,17 +84,17 @@ export async function runReport(options: ReportOptions): Promise<ReportResponse>
   const request = {
     property,
     dateRanges: [parsedDateRange],
-    dimensions: dimensions.map(name => ({ name })),
-    metrics: metrics.map(name => ({ name })),
+    dimensions: dimensions.map((name) => ({ name })),
+    metrics: metrics.map((name) => ({ name })),
     ...(limit && { limit }),
   };
 
   const [response] = await client.runReport(request);
 
   if (save) {
-    const operation = dimensions.join('_') || 'custom';
-    const extra = typeof dateRange === 'string' ? dateRange : undefined;
-    saveResult(response, 'reports', operation, extra);
+    const operation = dimensions.join("_") || "custom";
+    const extra = typeof dateRange === "string" ? dateRange : undefined;
+    saveResult(response, "reports", operation, extra);
   }
 
   return response as ReportResponse;
@@ -113,8 +105,8 @@ export async function runReport(options: ReportOptions): Promise<ReportResponse>
  */
 export async function getPageViews(dateRange?: string | DateRange): Promise<ReportResponse> {
   return runReport({
-    dimensions: ['pagePath', 'pageTitle'],
-    metrics: ['screenPageViews', 'activeUsers', 'averageSessionDuration'],
+    dimensions: ["pagePath", "pageTitle"],
+    metrics: ["screenPageViews", "activeUsers", "averageSessionDuration"],
     dateRange,
   });
 }
@@ -124,8 +116,8 @@ export async function getPageViews(dateRange?: string | DateRange): Promise<Repo
  */
 export async function getTrafficSources(dateRange?: string | DateRange): Promise<ReportResponse> {
   return runReport({
-    dimensions: ['sessionSource', 'sessionMedium', 'sessionCampaignName'],
-    metrics: ['sessions', 'activeUsers', 'newUsers', 'bounceRate'],
+    dimensions: ["sessionSource", "sessionMedium", "sessionCampaignName"],
+    metrics: ["sessions", "activeUsers", "newUsers", "bounceRate"],
     dateRange,
   });
 }
@@ -135,8 +127,8 @@ export async function getTrafficSources(dateRange?: string | DateRange): Promise
  */
 export async function getUserDemographics(dateRange?: string | DateRange): Promise<ReportResponse> {
   return runReport({
-    dimensions: ['country', 'deviceCategory', 'browser'],
-    metrics: ['activeUsers', 'sessions', 'newUsers'],
+    dimensions: ["country", "deviceCategory", "browser"],
+    metrics: ["activeUsers", "sessions", "newUsers"],
     dateRange,
   });
 }
@@ -146,8 +138,8 @@ export async function getUserDemographics(dateRange?: string | DateRange): Promi
  */
 export async function getEventCounts(dateRange?: string | DateRange): Promise<ReportResponse> {
   return runReport({
-    dimensions: ['eventName'],
-    metrics: ['eventCount', 'eventCountPerUser', 'activeUsers'],
+    dimensions: ["eventName"],
+    metrics: ["eventCount", "eventCountPerUser", "activeUsers"],
     dateRange,
   });
 }
@@ -157,8 +149,8 @@ export async function getEventCounts(dateRange?: string | DateRange): Promise<Re
  */
 export async function getConversions(dateRange?: string | DateRange): Promise<ReportResponse> {
   return runReport({
-    dimensions: ['eventName', 'sessionSource'],
-    metrics: ['conversions', 'totalRevenue'],
+    dimensions: ["eventName", "sessionSource"],
+    metrics: ["conversions", "totalRevenue"],
     dateRange,
   });
 }
@@ -168,8 +160,8 @@ export async function getConversions(dateRange?: string | DateRange): Promise<Re
  */
 export async function getEcommerceRevenue(dateRange?: string | DateRange): Promise<ReportResponse> {
   return runReport({
-    dimensions: ['date', 'transactionId'],
-    metrics: ['totalRevenue', 'ecommercePurchases', 'averagePurchaseRevenue'],
+    dimensions: ["date", "transactionId"],
+    metrics: ["totalRevenue", "ecommercePurchases", "averagePurchaseRevenue"],
     dateRange,
   });
 }

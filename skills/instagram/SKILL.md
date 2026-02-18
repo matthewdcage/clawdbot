@@ -1,7 +1,16 @@
 ---
 name: instagram
 description: Instagram platform integration. Post content, manage stories, view insights, and engage with followers.
-metadata: {"clawdbot":{"emoji":"📸","always":true,"requires":{"bins":["curl","jq"]},"primaryEnv":"INSTAGRAM_ACCESS_TOKEN"}}
+metadata:
+  {
+    "clawdbot":
+      {
+        "emoji": "📸",
+        "always": true,
+        "requires": { "bins": ["curl", "jq"] },
+        "primaryEnv": "INSTAGRAM_ACCESS_TOKEN",
+      },
+  }
 ---
 
 # Instagram 📸
