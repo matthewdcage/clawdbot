@@ -191,7 +191,11 @@ function handleDrop(e: DragEvent, props: ChatProps) {
   for (let i = 0; i < files.length; i++) {
     const file = files[i];
     // Support images and common file types
-    if (!file.type.startsWith("image/") && !file.type.startsWith("text/") && !file.type.startsWith("application/")) {
+    if (
+      !file.type.startsWith("image/") &&
+      !file.type.startsWith("text/") &&
+      !file.type.startsWith("application/")
+    ) {
       continue;
     }
 

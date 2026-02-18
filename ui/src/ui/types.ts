@@ -248,6 +248,19 @@ export type NostrStatus = {
   profile?: NostrProfile | null;
 };
 
+export type VoiceStatus = {
+  configured: boolean;
+  running: boolean;
+  connected: boolean;
+  provider: string;
+  activeCalls: number;
+  fromNumber?: string | null;
+  lastStartAt?: number | null;
+  lastStopAt?: number | null;
+  lastError?: string | null;
+  lastInboundAt?: number | null;
+};
+
 export type MSTeamsProbe = {
   ok: boolean;
   error?: string | null;

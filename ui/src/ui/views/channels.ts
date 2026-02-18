@@ -12,6 +12,7 @@ import type {
   SignalStatus,
   SlackStatus,
   TelegramStatus,
+  VoiceStatus,
   WhatsAppStatus,
 } from "../types.ts";
 import { renderChannelConfigSection } from "./channels.config.ts";
@@ -24,6 +25,7 @@ import { renderSignalCard } from "./channels.signal.ts";
 import { renderSlackCard } from "./channels.slack.ts";
 import { renderTelegramCard } from "./channels.telegram.ts";
 import type { ChannelKey, ChannelsChannelData, ChannelsProps } from "./channels.types.ts";
+import { renderVoiceCard } from "./channels.voice.ts";
 import { renderWhatsAppCard } from "./channels.whatsapp.ts";
 
 export function renderChannels(props: ChannelsProps) {
@@ -36,6 +38,7 @@ export function renderChannels(props: ChannelsProps) {
   const signal = (channels?.signal ?? null) as SignalStatus | null;
   const imessage = (channels?.imessage ?? null) as IMessageStatus | null;
   const nostr = (channels?.nostr ?? null) as NostrStatus | null;
+  const voice = (channels?.voice ?? null) as VoiceStatus | null;
   const channelOrder = resolveChannelOrder(props.snapshot);
   const orderedChannels = channelOrder
     .map((key, index) => ({
@@ -62,6 +65,7 @@ export function renderChannels(props: ChannelsProps) {
           signal,
           imessage,
           nostr,
+          voice,
           channelAccounts: props.snapshot?.channelAccounts ?? null,
         }),
       )}
@@ -143,6 +147,12 @@ function renderChannel(key: ChannelKey, props: ChannelsProps, data: ChannelsChan
       return renderIMessageCard({
         props,
         imessage: data.imessage,
+        accountCountLabel,
+      });
+    case "voice":
+      return renderVoiceCard({
+        props,
+        voice: data.voice,
         accountCountLabel,
       });
     case "nostr": {
