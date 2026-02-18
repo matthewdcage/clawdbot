@@ -7,12 +7,13 @@ import {
   requestBodyErrorToText,
 } from "openclaw/plugin-sdk";
 import type { VoiceCallConfig } from "./config.js";
+import type { SttProviderName } from "./config.js";
 import type { CoreConfig } from "./core-bridge.js";
 import type { CallManager } from "./manager.js";
 import type { MediaStreamConfig } from "./media-stream.js";
 import { MediaStreamHandler } from "./media-stream.js";
 import type { VoiceCallProvider } from "./providers/base.js";
-import { OpenAIRealtimeSTTProvider } from "./providers/stt-openai-realtime.js";
+import type { STTProvider } from "./providers/stt-base.js";
 import type { TwilioProvider } from "./providers/twilio.js";
 import type { NormalizedEvent, WebhookContext } from "./types.js";
 
@@ -32,6 +33,13 @@ export class VoiceCallWebhookServer {
 
   /** Media stream handler for bidirectional audio (when streaming enabled) */
   private mediaStreamHandler: MediaStreamHandler | null = null;
+
+  /**
+   * Per-call lock to prevent overlapping auto-responses.
+   * While an agent response is in-flight, subsequent transcripts for the same
+   * call are queued so they don't collide with the current response / TTS.
+   */
+  private respondingCalls = new Set<string>();
 
   constructor(
     config: VoiceCallConfig,
@@ -58,22 +66,14 @@ export class VoiceCallWebhookServer {
   }
 
   /**
-   * Initialize media streaming with OpenAI Realtime STT.
+   * Initialize media streaming with the configured STT provider.
    */
   private initializeMediaStreaming(): void {
-    const apiKey = this.config.streaming?.openaiApiKey || process.env.OPENAI_API_KEY;
-
-    if (!apiKey) {
-      console.warn("[voice-call] Streaming enabled but no OpenAI API key found");
+    const sttProvider = this.createStreamingSTTProvider();
+    if (!sttProvider) {
+      console.warn("[voice-call] Streaming enabled but no STT provider could be initialized");
       return;
     }
-
-    const sttProvider = new OpenAIRealtimeSTTProvider({
-      apiKey,
-      model: this.config.streaming?.sttModel,
-      silenceDurationMs: this.config.streaming?.silenceDurationMs,
-      vadThreshold: this.config.streaming?.vadThreshold,
-    });
 
     const streamConfig: MediaStreamConfig = {
       sttProvider,
@@ -118,13 +118,27 @@ export class VoiceCallWebhookServer {
         };
         this.manager.processEvent(event);
 
-        // Auto-respond in conversation mode (inbound always, outbound if mode is conversation)
+        // Auto-respond in conversation mode (inbound always, outbound if mode is conversation).
+        // Debounce: if an agent response is already in-flight for this call, skip to avoid
+        // overlapping TTS playback and agent processing (the ongoing turn will see the
+        // transcript in the conversation history for the next round).
         const callMode = call.metadata?.mode as string | undefined;
         const shouldRespond = call.direction === "inbound" || callMode === "conversation";
         if (shouldRespond) {
-          this.handleInboundResponse(call.callId, transcript).catch((err) => {
-            console.warn(`[voice-call] Failed to auto-respond:`, err);
-          });
+          if (this.respondingCalls.has(call.callId)) {
+            console.log(
+              `[voice-call] Skipping auto-response for ${call.callId}: response already in-flight`,
+            );
+          } else {
+            this.respondingCalls.add(call.callId);
+            this.handleInboundResponse(call.callId, transcript)
+              .catch((err) => {
+                console.warn(`[voice-call] Failed to auto-respond:`, err);
+              })
+              .finally(() => {
+                this.respondingCalls.delete(call.callId);
+              });
+          }
         }
       },
       onSpeechStart: (providerCallId) => {
@@ -171,6 +185,90 @@ export class VoiceCallWebhookServer {
 
     this.mediaStreamHandler = new MediaStreamHandler(streamConfig);
     console.log("[voice-call] Media streaming initialized");
+  }
+
+  /**
+   * Create the STT provider for Twilio media streaming.
+   * Tries the configured primary provider, then falls back.
+   */
+  private createStreamingSTTProvider(): STTProvider | null {
+    const streaming = this.config.streaming;
+    const primary = streaming?.sttProvider ?? "whisper-mlx";
+    const fallback = streaming?.sttFallback ?? "openai-realtime";
+    const silenceDurationMs = streaming?.silenceDurationMs ?? 800;
+    const vadThreshold = streaming?.vadThreshold ?? 0.5;
+    const apiKey = streaming?.openaiApiKey || process.env.OPENAI_API_KEY;
+
+    const tryCreate = (name: SttProviderName): STTProvider | null => {
+      try {
+        switch (name) {
+          case "whisper-mlx": {
+            // Dynamic require avoided — use lazy import
+            const { WhisperMLXSTTProvider } =
+              require("./providers/stt-whisper-mlx.js") as typeof import("./providers/stt-whisper-mlx.js");
+            return new WhisperMLXSTTProvider({
+              model: streaming?.whisperMlxModel ?? "mlx-community/whisper-large-v3-turbo",
+              silenceDurationMs,
+              vadThreshold: vadThreshold <= 0.1 ? vadThreshold : 0.03,
+              pythonPath: streaming?.whisperMlxPython,
+              language: streaming?.whisperMlxLanguage,
+            });
+          }
+          case "openai-realtime": {
+            if (!apiKey) {
+              console.warn("[voice-call] openai-realtime STT: no API key");
+              return null;
+            }
+            const { OpenAIRealtimeSTTProvider } =
+              require("./providers/stt-openai-realtime.js") as typeof import("./providers/stt-openai-realtime.js");
+            return new OpenAIRealtimeSTTProvider({
+              apiKey,
+              model: streaming?.sttModel ?? "gpt-4o-transcribe",
+              silenceDurationMs,
+              vadThreshold,
+            });
+          }
+          case "openai": {
+            if (!apiKey) {
+              console.warn("[voice-call] openai batch STT: no API key");
+              return null;
+            }
+            const { OpenAIBatchSTTProvider } =
+              require("./providers/stt-openai-batch.js") as typeof import("./providers/stt-openai-batch.js");
+            return new OpenAIBatchSTTProvider({
+              apiKey,
+              model: this.config.stt?.model ?? "whisper-1",
+              silenceDurationMs,
+              vadThreshold: vadThreshold <= 0.1 ? vadThreshold : 0.03,
+            });
+          }
+          default:
+            return null;
+        }
+      } catch (err) {
+        console.warn(
+          `[voice-call] STT "${name}" init failed: ${err instanceof Error ? err.message : String(err)}`,
+        );
+        return null;
+      }
+    };
+
+    const provider = tryCreate(primary);
+    if (provider) {
+      console.log(`[voice-call] Streaming STT: ${provider.name}`);
+      return provider;
+    }
+
+    if (fallback && fallback !== "none") {
+      console.warn(`[voice-call] Primary STT "${primary}" failed, trying fallback "${fallback}"`);
+      const fb = tryCreate(fallback as SttProviderName);
+      if (fb) {
+        console.log(`[voice-call] Streaming STT (fallback): ${fb.name}`);
+        return fb;
+      }
+    }
+
+    return null;
   }
 
   /**

@@ -74,6 +74,26 @@ const voiceCallConfigSchema = {
       advanced: true,
     },
     "streaming.sttModel": { label: "Realtime STT Model", advanced: true },
+    "streaming.silenceDurationMs": {
+      label: "VAD Silence Duration (ms)",
+      help: "How long silence before speech ends (higher = less sensitive)",
+      advanced: true,
+    },
+    "streaming.vadThreshold": {
+      label: "VAD Threshold (0-1)",
+      help: "Voice activity threshold (higher = less sensitive)",
+      advanced: true,
+    },
+    "streaming.bargeInEnabled": {
+      label: "Enable Barge-in",
+      help: "Allow user to interrupt agent speech",
+      advanced: true,
+    },
+    "streaming.bargeInMinDurationMs": {
+      label: "Barge-in Min Duration (ms)",
+      help: "Minimum speech duration before triggering barge-in",
+      advanced: true,
+    },
     "streaming.streamPath": { label: "Media Stream Path", advanced: true },
     "tts.provider": {
       label: "TTS Provider Override",
@@ -146,7 +166,40 @@ const voiceCallPlugin = {
   description: "Voice-call plugin with Telnyx/Twilio/Plivo providers",
   configSchema: voiceCallConfigSchema,
   register(api: OpenClawPluginApi) {
+    // #region agent log
+    const rawPluginConfig = api.pluginConfig as Record<string, unknown> | undefined;
+    const rawThreecx = rawPluginConfig?.threecx as Record<string, unknown> | undefined;
+    fetch("http://127.0.0.1:7245/ingest/bb17bc8b-bc5f-4f49-b97d-e45c4a6a3bda", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        location: "index.ts:register:rawPluginConfig",
+        message: "RAW pluginConfig from API",
+        data: {
+          hasPluginConfig: !!api.pluginConfig,
+          hasThreecx: !!rawThreecx,
+          rtpPortMin: rawThreecx?.rtpPortMin,
+          rtpPortMax: rawThreecx?.rtpPortMax,
+        },
+        hypothesisId: "CONFIG",
+        timestamp: Date.now(),
+      }),
+    }).catch(() => {});
+    // #endregion
     const config = resolveVoiceCallConfig(voiceCallConfigSchema.parse(api.pluginConfig));
+    // #region agent log
+    fetch("http://127.0.0.1:7245/ingest/bb17bc8b-bc5f-4f49-b97d-e45c4a6a3bda", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        location: "index.ts:register:resolvedConfig",
+        message: "RESOLVED config after resolveVoiceCallConfig",
+        data: { rtpPortMin: config.threecx?.rtpPortMin, rtpPortMax: config.threecx?.rtpPortMax },
+        hypothesisId: "CONFIG",
+        timestamp: Date.now(),
+      }),
+    }).catch(() => {});
+    // #endregion
     const validation = validateProviderConfig(config);
 
     if (api.pluginConfig && typeof api.pluginConfig === "object") {
@@ -174,11 +227,12 @@ const voiceCallPlugin = {
         return runtime;
       }
       if (!runtimePromise) {
+        const pluginLog = api.logger;
         runtimePromise = createVoiceCallRuntime({
           config,
           coreConfig: api.config as CoreConfig,
           ttsRuntime: api.runtime.tts,
-          logger: api.logger,
+          logger: { ...pluginLog, debug: pluginLog.debug ?? ((_msg: string) => {}) },
         });
       }
       runtime = await runtimePromise;
@@ -463,6 +517,75 @@ const voiceCallPlugin = {
             error: err instanceof Error ? err.message : String(err),
           });
         }
+      },
+    });
+
+    // Register as a channel so it appears in the web UI channels page
+    api.registerChannel({
+      plugin: {
+        id: "voice",
+        meta: {
+          id: "voice",
+          label: "Voice Call",
+          selectionLabel: "Voice Call",
+          docsPath: "/channels/voice-call",
+          blurb: "Voice call channel (3CX, Twilio, Telnyx)",
+        },
+        capabilities: {
+          chatTypes: ["direct"],
+        },
+        config: {
+          listAccountIds: () => ["default"],
+          resolveAccount: () => ({
+            accountId: "default",
+            provider: config.provider,
+            enabled: config.enabled,
+            fromNumber: config.fromNumber,
+            toNumber: config.toNumber,
+          }),
+          isEnabled: () => config.enabled,
+          isConfigured: () => validation.valid,
+          describeAccount: () => ({
+            accountId: "default",
+            name: config.provider ? `${config.provider} voice` : "Voice Call",
+            enabled: config.enabled,
+            configured: validation.valid,
+            provider: config.provider,
+          }),
+        },
+        outbound: {
+          deliveryMode: "direct",
+        },
+        status: {
+          defaultRuntime: {
+            accountId: "default",
+            running: false,
+            connected: false,
+            lastStartAt: null,
+            lastStopAt: null,
+            lastError: null,
+          },
+          buildChannelSummary: ({ snapshot }) => {
+            const rt = runtime;
+            const activeCalls = rt ? rt.manager.getActiveCalls().length : 0;
+            let sipConnected = false;
+            if (rt && rt.provider.name === "threecx") {
+              sipConnected = Boolean((rt.provider as { isRegistered?: boolean }).isRegistered);
+            }
+            return {
+              configured: snapshot?.configured ?? validation.valid,
+              running: Boolean(rt),
+              connected: sipConnected,
+              provider: config.provider ?? "none",
+              activeCalls,
+              fromNumber: config.fromNumber ?? null,
+              lastStartAt: snapshot?.lastStartAt ?? null,
+              lastStopAt: snapshot?.lastStopAt ?? null,
+              lastError: snapshot?.lastError ?? null,
+              lastInboundAt: snapshot?.lastInboundAt ?? null,
+            };
+          },
+        },
       },
     });
 

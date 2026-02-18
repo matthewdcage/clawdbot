@@ -107,6 +107,11 @@ export const NormalizedEventSchema = z.discriminatedUnion("type", [
     confidence: z.number().min(0).max(1).optional(),
   }),
   BaseEventSchema.extend({
+    type: z.literal("call.interrupted"),
+    transcript: z.string(),
+    isFinal: z.boolean(),
+  }),
+  BaseEventSchema.extend({
     type: z.literal("call.silence"),
     durationMs: z.number(),
   }),

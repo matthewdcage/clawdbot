@@ -1,4 +1,5 @@
 #!/usr/bin/env bun
+// @ts-nocheck — dev-only smoke test; drachtio-srf types are loosely defined
 /**
  * Smoke test: verify SIP REGISTER with 3CX PBX via drachtio-srf.
  * Usage: bun extensions/voice-call/smoke-test-3cx.ts

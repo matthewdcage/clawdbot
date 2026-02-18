@@ -9,6 +9,7 @@
  */
 
 import WebSocket from "ws";
+import type { STTProvider, STTSession } from "./stt-base.js";
 
 /**
  * Configuration for OpenAI Realtime STT.
@@ -25,36 +26,19 @@ export interface RealtimeSTTConfig {
 }
 
 /**
- * Session for streaming audio and receiving transcripts.
+ * Legacy alias — prefer the generic {@link STTSession} from stt-base.
  */
-export interface RealtimeSTTSession {
-  /** Connect to the transcription service */
-  connect(): Promise<void>;
-  /** Send mu-law audio data (8kHz mono) */
-  sendAudio(audio: Buffer): void;
-  /** Wait for next complete transcript (after VAD detects end of speech) */
-  waitForTranscript(timeoutMs?: number): Promise<string>;
-  /** Set callback for partial transcripts (streaming) */
-  onPartial(callback: (partial: string) => void): void;
-  /** Set callback for final transcripts */
-  onTranscript(callback: (transcript: string) => void): void;
-  /** Set callback when speech starts (VAD) */
-  onSpeechStart(callback: () => void): void;
-  /** Close the session */
-  close(): void;
-  /** Check if session is connected */
-  isConnected(): boolean;
-}
+export type RealtimeSTTSession = STTSession;
 
 /**
  * Provider factory for OpenAI Realtime STT sessions.
  */
-export class OpenAIRealtimeSTTProvider {
+export class OpenAIRealtimeSTTProvider implements STTProvider {
   readonly name = "openai-realtime";
   private apiKey: string;
   private model: string;
-  private silenceDurationMs: number;
-  private vadThreshold: number;
+  public readonly silenceDurationMs: number;
+  public readonly vadThreshold: number;
 
   constructor(config: RealtimeSTTConfig) {
     if (!config.apiKey) {
@@ -69,7 +53,7 @@ export class OpenAIRealtimeSTTProvider {
   /**
    * Create a new realtime transcription session.
    */
-  createSession(): RealtimeSTTSession {
+  createSession(): STTSession {
     return new OpenAIRealtimeSTTSession(
       this.apiKey,
       this.model,
@@ -82,7 +66,7 @@ export class OpenAIRealtimeSTTProvider {
 /**
  * WebSocket-based session for real-time speech-to-text.
  */
-class OpenAIRealtimeSTTSession implements RealtimeSTTSession {
+class OpenAIRealtimeSTTSession implements STTSession {
   private static readonly MAX_RECONNECT_ATTEMPTS = 5;
   private static readonly RECONNECT_DELAY_MS = 1000;
 
@@ -94,6 +78,7 @@ class OpenAIRealtimeSTTSession implements RealtimeSTTSession {
   private onTranscriptCallback: ((transcript: string) => void) | null = null;
   private onPartialCallback: ((partial: string) => void) | null = null;
   private onSpeechStartCallback: (() => void) | null = null;
+  private onSpeechEndCallback: (() => void) | null = null;
 
   constructor(
     private readonly apiKey: string,
@@ -221,9 +206,13 @@ class OpenAIRealtimeSTTSession implements RealtimeSTTSession {
     switch (event.type) {
       case "transcription_session.created":
       case "transcription_session.updated":
-      case "input_audio_buffer.speech_stopped":
       case "input_audio_buffer.committed":
         console.log(`[RealtimeSTT] ${event.type}`);
+        break;
+
+      case "input_audio_buffer.speech_stopped":
+        console.log("[RealtimeSTT] Speech stopped");
+        this.onSpeechEndCallback?.();
         break;
 
       case "conversation.item.input_audio_transcription.delta":
@@ -279,6 +268,10 @@ class OpenAIRealtimeSTTSession implements RealtimeSTTSession {
 
   onSpeechStart(callback: () => void): void {
     this.onSpeechStartCallback = callback;
+  }
+
+  onSpeechEnd(callback: () => void): void {
+    this.onSpeechEndCallback = callback;
   }
 
   async waitForTranscript(timeoutMs = 30000): Promise<string> {

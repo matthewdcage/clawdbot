@@ -1,14 +1,17 @@
 import type { VoiceCallConfig } from "./config.js";
-import { resolveVoiceCallConfig, validateProviderConfig } from "./config.js";
+import { resolveVoiceCallConfig, validateProviderConfig, type SttProviderName } from "./config.js";
 import type { CoreConfig } from "./core-bridge.js";
+import { loadCoreAgentDeps } from "./core-bridge.js";
 import { CallManager } from "./manager.js";
 import type { VoiceCallProvider } from "./providers/base.js";
+import type { STTProvider } from "./providers/stt-base.js";
+import type { TelephonyTtsRuntime } from "./telephony-tts.js";
+import type { NormalizedEvent } from "./types.js";
 import { MockProvider } from "./providers/mock.js";
 import { PlivoProvider } from "./providers/plivo.js";
 import { TelnyxProvider } from "./providers/telnyx.js";
 import { ThreeCXProvider } from "./providers/threecx.js";
 import { TwilioProvider } from "./providers/twilio.js";
-import type { TelephonyTtsRuntime } from "./telephony-tts.js";
 import { createTelephonyTtsProvider } from "./telephony-tts.js";
 import { startTunnel, type TunnelResult } from "./tunnel.js";
 import {
@@ -31,7 +34,7 @@ type Logger = {
   info: (message: string) => void;
   warn: (message: string) => void;
   error: (message: string) => void;
-  debug?: (message: string) => void;
+  debug: (message: string) => void;
 };
 
 function isLoopbackBind(bind: string | undefined): boolean {
@@ -88,19 +91,12 @@ function resolveProvider(config: VoiceCallConfig): VoiceCallProvider {
       );
     case "mock":
       return new MockProvider();
-    case "threecx":
-      return new ThreeCXProvider({
-        server: config.threecx?.server,
-        extension: config.threecx?.extension,
-        authId: config.threecx?.authId,
-        password: config.threecx?.password,
-        domain: config.threecx?.domain,
-        drachtioHost: config.threecx?.drachtioHost,
-        drachtioPort: config.threecx?.drachtioPort,
-        drachtioSecret: config.threecx?.drachtioSecret,
-        rtpPortMin: config.threecx?.rtpPortMin,
-        rtpPortMax: config.threecx?.rtpPortMax,
-      });
+    case "threecx": {
+      if (!config.threecx) {
+        throw new Error("3CX configuration is required");
+      }
+      return new ThreeCXProvider(config.threecx);
+    }
     default:
       throw new Error(`Unsupported voice-call provider: ${String(config.provider)}`);
   }
@@ -211,10 +207,49 @@ export async function createVoiceCallRuntime(params: {
   if (provider.name === "threecx") {
     const threecxProvider = provider as ThreeCXProvider;
 
-    // Bridge SIP events -> CallManager
-    threecxProvider.addEventListener((event) => {
+    // Bridge SIP events -> CallManager + auto-start STT on answer.
+    // CallManager assigns its own callId (UUID) which differs from the
+    // ThreeCX-internal UUID. We capture the original callId before
+    // processEvent mutates it, then register an alias so all provider
+    // methods (startListening, playTts, hangupCall, etc.) can find
+    // the SIP session regardless of which callId is used.
+    threecxProvider.addEventListener(async (event) => {
       try {
+        const originalCallId = event.callId;
         manager.processEvent(event);
+
+        // Register alias when CallManager assigned a different callId
+        if (event.callId !== originalCallId) {
+          threecxProvider.registerCallIdAlias(event.callId, originalCallId);
+        }
+
+        // On answer: speak initial greeting first, THEN start STT.
+        // The greeting must finish before STT begins; otherwise the
+        // greeting audio leaks back through the microphone and the
+        // STT detects it as user speech, triggering barge-in and
+        // cutting off the greeting mid-sentence.
+        if (event.type === "call.answered") {
+          try {
+            await manager.speakInitialMessage(event.providerCallId ?? event.callId);
+          } catch (err) {
+            log.warn(
+              `[voice-call] Initial greeting failed (will still start STT): ${
+                err instanceof Error ? err.message : String(err)
+              }`,
+            );
+          }
+
+          threecxProvider
+            .startListening({
+              callId: event.callId,
+              providerCallId: event.providerCallId ?? event.callId,
+            })
+            .catch((err) => {
+              log.error(
+                `[voice-call] Failed to auto-start listening: ${err instanceof Error ? err.message : String(err)}`,
+              );
+            });
+        }
       } catch (err) {
         log.error(
           `[voice-call] Error processing 3CX event ${event.type}: ${
@@ -227,12 +262,79 @@ export async function createVoiceCallRuntime(params: {
     try {
       await threecxProvider.connect();
       log.info("[voice-call] ThreeCX SIP registration successful");
+
+      // Debug: log port pool status after initialization
+      const portStatus = threecxProvider.portPoolStatus;
+      log.info(
+        `[voice-call] Port pool initialized: range=${config.threecx?.rtpPortMin ?? 21000}-${config.threecx?.rtpPortMax ?? 21100}, ` +
+          `available=${portStatus.available}, active=${portStatus.active}`,
+      );
     } catch (err) {
       log.error(
         `[voice-call] ThreeCX SIP registration failed: ${err instanceof Error ? err.message : String(err)}`,
       );
       throw err;
     }
+
+    // Wire TTS provider for ThreeCX (mirrors the Twilio TTS setup above)
+    if (ttsRuntime?.textToSpeechTelephony) {
+      try {
+        const ttsProvider = createTelephonyTtsProvider({
+          coreConfig,
+          ttsOverride: config.tts,
+          runtime: ttsRuntime,
+        });
+        threecxProvider.setTTSProvider(ttsProvider);
+        log.info("[voice-call] ThreeCX TTS provider configured");
+      } catch (err) {
+        log.warn(
+          `[voice-call] ThreeCX TTS init failed: ${err instanceof Error ? err.message : String(err)}`,
+        );
+      }
+    } else {
+      log.warn("[voice-call] ThreeCX TTS unavailable; voice responses will be silent");
+    }
+
+    // Wire STT provider for ThreeCX — try primary, then fallback.
+    const primaryStt = config.streaming?.sttProvider ?? config.stt?.provider ?? "whisper-mlx";
+    const fallbackStt = config.streaming?.sttFallback ?? config.stt?.fallback ?? "openai-realtime";
+
+    let sttProvider = await createSTTProvider(primaryStt, config, log);
+    if (!sttProvider && fallbackStt !== "none") {
+      log.warn(
+        `[voice-call] Primary STT "${primaryStt}" unavailable, trying fallback "${fallbackStt}"`,
+      );
+      sttProvider = await createSTTProvider(fallbackStt as SttProviderName, config, log);
+    }
+
+    if (sttProvider) {
+      threecxProvider.setSTTProvider(sttProvider);
+      log.info(
+        `[voice-call] ThreeCX STT: ${sttProvider.name} (silence=${sttProvider.silenceDurationMs}ms, vad=${sttProvider.vadThreshold})`,
+      );
+    } else {
+      log.warn("[voice-call] ThreeCX STT unavailable; no provider could be initialized");
+    }
+
+    // Wire barge-in configuration from streaming config
+    threecxProvider.setBargeInConfig(
+      config.streaming?.bargeInEnabled ?? true,
+      config.streaming?.bargeInMinDurationMs ?? 300,
+    );
+    const bargeIn = config.streaming?.bargeInEnabled ?? true;
+    log.info(
+      `[voice-call] ThreeCX barge-in: ${bargeIn ? "enabled" : "disabled"} (debounce: ${config.streaming?.bargeInMinDurationMs ?? 300}ms)`,
+    );
+
+    // Wire conversation loop for 3CX: when user speech is detected, generate and speak response.
+    // This mirrors the handleInboundResponse flow used by Twilio streaming.
+    setupThreeCXConversationLoop({
+      provider: threecxProvider,
+      manager,
+      config,
+      coreConfig,
+      log,
+    });
   }
 
   const stop = async () => {
@@ -266,4 +368,231 @@ export async function createVoiceCallRuntime(params: {
     publicUrl,
     stop,
   };
+}
+
+// ---------------------------------------------------------------------------
+// STT Provider Factory
+// ---------------------------------------------------------------------------
+
+/**
+ * Create an STT provider by name. Returns null if the provider can't be
+ * initialized (e.g. missing API key, missing Python package).
+ */
+async function createSTTProvider(
+  name: SttProviderName,
+  config: VoiceCallConfig,
+  log: Logger,
+): Promise<STTProvider | null> {
+  const streaming = config.streaming;
+  const silenceDurationMs = streaming?.silenceDurationMs ?? 800;
+  const vadThreshold = streaming?.vadThreshold ?? 0.5;
+
+  switch (name) {
+    case "whisper-mlx": {
+      try {
+        const { WhisperMLXSTTProvider } = await import("./providers/stt-whisper-mlx.js");
+        const provider = new WhisperMLXSTTProvider({
+          model: streaming?.whisperMlxModel ?? "mlx-community/whisper-large-v3-turbo",
+          silenceDurationMs,
+          // Whisper MLX uses local energy-based VAD with a lower default threshold
+          vadThreshold: vadThreshold <= 0.1 ? vadThreshold : 0.03,
+          pythonPath: streaming?.whisperMlxPython,
+          language: streaming?.whisperMlxLanguage,
+        });
+        return provider;
+      } catch (err) {
+        log.warn(
+          `[voice-call] whisper-mlx init failed: ${err instanceof Error ? err.message : String(err)}`,
+        );
+        return null;
+      }
+    }
+
+    case "openai-realtime": {
+      const apiKey = streaming?.openaiApiKey || process.env.OPENAI_API_KEY;
+      if (!apiKey) {
+        log.warn("[voice-call] openai-realtime STT unavailable: no API key");
+        return null;
+      }
+      try {
+        const { OpenAIRealtimeSTTProvider } = await import("./providers/stt-openai-realtime.js");
+        return new OpenAIRealtimeSTTProvider({
+          apiKey,
+          model: streaming?.sttModel ?? "gpt-4o-transcribe",
+          silenceDurationMs,
+          vadThreshold,
+        });
+      } catch (err) {
+        log.warn(
+          `[voice-call] openai-realtime STT init failed: ${err instanceof Error ? err.message : String(err)}`,
+        );
+        return null;
+      }
+    }
+
+    case "openai": {
+      const apiKey = streaming?.openaiApiKey || process.env.OPENAI_API_KEY;
+      if (!apiKey) {
+        log.warn("[voice-call] openai STT unavailable: no API key");
+        return null;
+      }
+      try {
+        const { OpenAIBatchSTTProvider } = await import("./providers/stt-openai-batch.js");
+        return new OpenAIBatchSTTProvider({
+          apiKey,
+          model: config.stt?.model ?? "whisper-1",
+          silenceDurationMs,
+          vadThreshold: vadThreshold <= 0.1 ? vadThreshold : 0.03,
+        });
+      } catch (err) {
+        log.warn(
+          `[voice-call] openai batch STT init failed: ${err instanceof Error ? err.message : String(err)}`,
+        );
+        return null;
+      }
+    }
+
+    default:
+      log.warn(`[voice-call] Unknown STT provider: ${String(name)}`);
+      return null;
+  }
+}
+
+// ---------------------------------------------------------------------------
+// ThreeCX Conversation Loop
+// ---------------------------------------------------------------------------
+
+/**
+ * Set up the conversation loop for 3CX calls.
+ * Listens for final speech events, generates responses via the embedded agent,
+ * and speaks them back to the caller via TTS.
+ */
+function setupThreeCXConversationLoop(params: {
+  provider: ThreeCXProvider;
+  manager: CallManager;
+  config: VoiceCallConfig;
+  coreConfig: CoreConfig;
+  log: Logger;
+}): void {
+  const { provider, manager, config, coreConfig, log } = params;
+
+  // Track calls that are currently generating a response to avoid overlapping responses
+  const pendingResponses = new Set<string>();
+
+  provider.addEventListener(async (event: NormalizedEvent) => {
+    // Only process final speech events (user finished speaking)
+    if (event.type !== "call.speech" || !event.isFinal) {
+      return;
+    }
+
+    const callId = event.callId;
+    const userMessage = event.transcript;
+
+    if (!userMessage?.trim()) {
+      return;
+    }
+
+    // Skip if we're already generating a response for this call
+    if (pendingResponses.has(callId)) {
+      log.debug(`[voice-call] Skipping overlapping response for call ${callId}`);
+      return;
+    }
+
+    const call = manager.getCall(callId);
+    if (!call) {
+      log.warn(`[voice-call] Call ${callId} not found for conversation loop`);
+      return;
+    }
+
+    log.info(`[voice-call] 3CX conversation: user said "${userMessage}"`);
+
+    // Emit user chat event to web UI for real-time transcript display
+    try {
+      const deps = await loadCoreAgentDeps();
+      if (deps.emitAgentEvent) {
+        // Build session key from phone number (matches response-generator.ts)
+        const normalizedPhone = call.from.replace(/\D/g, "");
+        const sessionKey = `voice:${normalizedPhone}`;
+        const runId = `voice:${callId}:${Date.now()}`;
+
+        deps.emitAgentEvent({
+          runId,
+          sessionKey,
+          stream: "event:chat",
+          data: {
+            type: "user",
+            text: userMessage,
+            provider: "voice",
+            timestamp: Date.now(),
+          },
+        });
+        log.debug(`[voice-call] Emitted user chat event for call ${callId}`);
+      }
+    } catch (err) {
+      log.warn(
+        `[voice-call] Failed to emit user chat event: ${err instanceof Error ? err.message : String(err)}`,
+      );
+    }
+
+    // Generate and speak response
+    pendingResponses.add(callId);
+    try {
+      const { generateVoiceResponse } = await import("./response-generator.js");
+
+      const result = await generateVoiceResponse({
+        voiceConfig: config,
+        coreConfig,
+        callId,
+        from: call.from,
+        transcript: call.transcript,
+        userMessage,
+      });
+
+      if (result.error) {
+        log.error(`[voice-call] Response generation error: ${result.error}`);
+        return;
+      }
+
+      if (result.text) {
+        log.info(`[voice-call] 3CX AI response: "${result.text}"`);
+
+        // Emit AI response as chat event to session stream
+        try {
+          const deps = await loadCoreAgentDeps();
+          if (deps.emitAgentEvent) {
+            const runId = `voice:${callId}:${Date.now()}`;
+            const normalizedPhone = call.from.replace(/\D/g, "");
+            const sessionKey = `voice:${normalizedPhone}`;
+
+            deps.emitAgentEvent({
+              runId,
+              sessionKey,
+              stream: "event:chat",
+              data: {
+                type: "assistant",
+                text: result.text,
+                provider: "voice",
+                timestamp: Date.now(),
+              },
+            });
+            log.debug(`[voice-call] Emitted assistant chat event for call ${callId}`);
+          }
+        } catch (err) {
+          log.warn(
+            `[voice-call] Failed to emit assistant chat event: ${err instanceof Error ? err.message : String(err)}`,
+          );
+        }
+
+        await manager.speak(callId, result.text);
+      }
+    } catch (err) {
+      log.error(
+        `[voice-call] 3CX conversation loop error: ${err instanceof Error ? err.message : String(err)}`,
+      );
+    } finally {
+      pendingResponses.delete(callId);
+    }
+  });
+
+  log.info("[voice-call] ThreeCX conversation loop configured");
 }

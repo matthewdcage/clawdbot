@@ -198,8 +198,8 @@ docker run -d --name drachtio \
     drachtioPort: 9022,
     drachtioSecret: "cymru",
     // RTP port range (defaults shown)
-    rtpPortMin: 20000,
-    rtpPortMax: 20100,
+    rtpPortMin: 21000,
+    rtpPortMax: 21100,
   },
 }
 ```

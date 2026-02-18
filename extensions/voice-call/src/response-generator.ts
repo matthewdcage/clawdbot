@@ -4,6 +4,8 @@
  */
 
 import crypto from "node:crypto";
+import fs from "node:fs";
+import path from "node:path";
 import type { VoiceCallConfig } from "./config.js";
 import { loadCoreAgentDeps, type CoreConfig } from "./core-bridge.js";
 
@@ -31,6 +33,61 @@ type SessionEntry = {
   sessionId: string;
   updatedAt: number;
 };
+
+/**
+ * Helper to append a message to the session transcript file.
+ * Creates transcript entries that appear in the web UI chat history.
+ */
+function appendTranscriptMessage(params: {
+  role: "user" | "assistant";
+  content: string;
+  transcriptPath: string;
+  sessionId: string;
+}): { ok: boolean; error?: string } {
+  const { role, content, transcriptPath, sessionId } = params;
+
+  // Ensure transcript file exists with proper header
+  if (!fs.existsSync(transcriptPath)) {
+    try {
+      fs.mkdirSync(path.dirname(transcriptPath), { recursive: true });
+      const header = {
+        type: "session",
+        version: 2,
+        id: sessionId,
+        timestamp: new Date().toISOString(),
+        cwd: process.cwd(),
+      };
+      fs.writeFileSync(transcriptPath, `${JSON.stringify(header)}\n`, "utf-8");
+    } catch (err) {
+      return { ok: false, error: err instanceof Error ? err.message : String(err) };
+    }
+  }
+
+  // Create transcript entry
+  const now = Date.now();
+  const messageId = crypto.randomUUID().slice(0, 8);
+  const messageBody = {
+    role,
+    content: [{ type: "text", text: content }],
+    timestamp: now,
+    ...(role === "assistant"
+      ? { stopReason: "end_turn", usage: { input: 0, output: 0, totalTokens: 0 } }
+      : {}),
+  };
+  const transcriptEntry = {
+    type: "message",
+    id: messageId,
+    timestamp: new Date(now).toISOString(),
+    message: messageBody,
+  };
+
+  try {
+    fs.appendFileSync(transcriptPath, `${JSON.stringify(transcriptEntry)}\n`, "utf-8");
+    return { ok: true };
+  } catch (err) {
+    return { ok: false, error: err instanceof Error ? err.message : String(err) };
+  }
+}
 
 /**
  * Generate a voice response using the embedded Pi agent with full tool support.
@@ -101,10 +158,17 @@ export async function generateVoiceResponse(
   const identity = deps.resolveAgentIdentity(cfg, agentId);
   const agentName = identity?.name?.trim() || "assistant";
 
-  // Build system prompt with conversation history
+  // Build system prompt with conversation history.
+  // Voice responses should be concise: 1-7 sentences so TTS finishes quickly.
+  // For longer details, offer to send via message/email instead.
+  const maxToolIter = voiceConfig.maxToolIterations ?? 5;
+  const toolLimitHint =
+    maxToolIter > 0
+      ? ` Limit yourself to at most ${maxToolIter} tool calls per turn — if a task needs more, summarize what you know and offer to continue later.`
+      : "";
   const basePrompt =
     voiceConfig.responseSystemPrompt ??
-    `You are ${agentName}, a helpful voice assistant on a phone call. Keep responses brief and conversational (1-2 sentences max). Be natural and friendly. The caller's phone number is ${from}. You have access to tools - use them when helpful.`;
+    `You are ${agentName}, a helpful voice assistant on a phone call. Keep responses concise and conversational (1-7 sentences). This is a phone call — the caller has to listen to every word, so be succinct. If the answer requires a long explanation, give a brief summary and offer to send the full details by message or email. Be natural and friendly. The caller's phone number is ${from}. You have access to tools - use them when helpful but avoid long tool chains.${toolLimitHint}`;
 
   let extraSystemPrompt = basePrompt;
   if (transcript.length > 0) {
@@ -117,6 +181,17 @@ export async function generateVoiceResponse(
   // Resolve timeout
   const timeoutMs = voiceConfig.responseTimeoutMs ?? deps.resolveAgentTimeoutMs({ cfg });
   const runId = `voice:${callId}:${Date.now()}`;
+
+  // Register the run context so the gateway can correlate events (event:chat, etc.)
+  // with this voice session. This enables the web UI to refresh chat history when
+  // a voice response completes.
+  if (deps.registerAgentRunContext) {
+    deps.registerAgentRunContext(runId, {
+      sessionKey,
+      verboseLevel: "off",
+      isHeartbeat: false,
+    });
+  }
 
   try {
     const result = await deps.runEmbeddedPiAgent({
@@ -148,6 +223,33 @@ export async function generateVoiceResponse(
 
     if (!text && result.meta?.aborted) {
       return { text: null, error: "Response generation was aborted" };
+    }
+
+    // Write user and assistant messages to transcript so they appear in web UI
+    const transcriptPath = sessionFile || path.join(agentDir, "sessions", `${sessionId}.jsonl`);
+
+    // Record user's message
+    const userAppend = appendTranscriptMessage({
+      role: "user",
+      content: userMessage,
+      transcriptPath,
+      sessionId,
+    });
+    if (!userAppend.ok) {
+      console.warn(`[voice-call] Failed to record user message: ${userAppend.error}`);
+    }
+
+    // Record agent's response if available
+    if (text) {
+      const assistantAppend = appendTranscriptMessage({
+        role: "assistant",
+        content: text,
+        transcriptPath,
+        sessionId,
+      });
+      if (!assistantAppend.ok) {
+        console.warn(`[voice-call] Failed to record assistant message: ${assistantAppend.error}`);
+      }
     }
 
     return { text };

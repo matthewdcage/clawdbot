@@ -86,10 +86,20 @@ export const ThreeCXConfigSchema = z
     drachtioPort: z.number().default(9022),
     /** drachtio-server shared secret (default: cymru) */
     drachtioSecret: z.string().default("cymru"),
-    /** Minimum RTP port for media (default: 20000) */
-    rtpPortMin: z.number().default(20000),
-    /** Maximum RTP port for media (default: 20100) */
-    rtpPortMax: z.number().default(20100),
+    /** Minimum RTP port for media (default: 21000) */
+    rtpPortMin: z.number().default(21000),
+    /** Maximum RTP port for media (default: 21100) */
+    rtpPortMax: z.number().default(21100),
+    /** Public IP for SIP Contact header (NAT traversal). Auto-detected if empty. */
+    externalIp: z.string().min(1).optional(),
+    /** FreeSWITCH ESL host (default: 127.0.0.1) */
+    freeswitchHost: z.string().default("127.0.0.1"),
+    /** FreeSWITCH ESL port (default: 8122) */
+    freeswitchPort: z.number().default(8122),
+    /** FreeSWITCH ESL secret */
+    freeswitchSecret: z.string().min(1).optional(),
+    /** Audio fork WebSocket port (default: 3001) */
+    audioForkPort: z.number().default(3001),
   })
   .strict();
 export type ThreeCXConfig = z.infer<typeof ThreeCXConfigSchema>;
@@ -98,15 +108,51 @@ export type ThreeCXConfig = z.infer<typeof ThreeCXConfigSchema>;
 // STT/TTS Configuration
 // -----------------------------------------------------------------------------
 
+/**
+ * All supported STT provider identifiers.
+ * - "whisper-mlx": Local Whisper on Apple Silicon via MLX (no API key, private)
+ * - "openai-realtime": OpenAI Realtime WebSocket API (lowest latency, streaming)
+ * - "openai": OpenAI standard Whisper API (batch, simple, requires OPENAI_API_KEY)
+ */
+export const SttProviderEnum = z.enum(["whisper-mlx", "openai-realtime", "openai"]);
+export type SttProviderName = z.infer<typeof SttProviderEnum>;
+
 export const SttConfigSchema = z
   .object({
-    /** STT provider (currently only OpenAI supported) */
-    provider: z.literal("openai").default("openai"),
-    /** Whisper model to use */
-    model: z.string().min(1).default("whisper-1"),
+    /**
+     * Primary STT provider.
+     * - "whisper-mlx": Local Whisper via Apple Silicon MLX (no API key needed)
+     * - "openai-realtime": OpenAI Realtime WebSocket API (low latency streaming)
+     * - "openai": OpenAI standard Whisper API (requires OPENAI_API_KEY)
+     */
+    provider: SttProviderEnum.default("whisper-mlx"),
+    /**
+     * Model name for the primary provider.
+     * - whisper-mlx: HuggingFace repo (e.g. "mlx-community/whisper-large-v3-turbo")
+     * - openai-realtime: Realtime model (e.g. "gpt-4o-transcribe")
+     * - openai: API model name (e.g. "whisper-1")
+     */
+    model: z.string().min(1).default("mlx-community/whisper-large-v3-turbo"),
+    /**
+     * Fallback STT provider when the primary is unavailable.
+     * - "openai-realtime": Fall back to OpenAI Realtime API
+     * - "openai": Fall back to OpenAI standard Whisper API
+     * - "whisper-mlx": Fall back to local MLX Whisper
+     * - "none": No fallback; fail if primary is unavailable
+     */
+    fallback: z
+      .enum(["openai-realtime", "openai", "whisper-mlx", "none"])
+      .default("openai-realtime"),
+    /** Fallback model name (default: gpt-4o-transcribe for openai-realtime) */
+    fallbackModel: z.string().min(1).default("gpt-4o-transcribe"),
   })
   .strict()
-  .default({ provider: "openai", model: "whisper-1" });
+  .default({
+    provider: "whisper-mlx",
+    model: "mlx-community/whisper-large-v3-turbo",
+    fallback: "openai-realtime",
+    fallbackModel: "gpt-4o-transcribe",
+  });
 export type SttConfig = z.infer<typeof SttConfigSchema>;
 
 export { TtsAutoSchema, TtsConfigSchema, TtsModeSchema, TtsProviderSchema };
@@ -233,27 +279,59 @@ export const VoiceCallStreamingConfigSchema = z
   .object({
     /** Enable real-time audio streaming (requires WebSocket support) */
     enabled: z.boolean().default(false),
-    /** STT provider for real-time transcription */
-    sttProvider: z.enum(["openai-realtime"]).default("openai-realtime"),
+    /**
+     * Primary STT provider for real-time transcription.
+     * - "whisper-mlx": Local Whisper on Apple Silicon (no API key, ~1s latency per utterance)
+     * - "openai-realtime": OpenAI Realtime WebSocket API (lowest latency, streaming)
+     * - "openai": OpenAI standard Whisper API (batch per utterance, requires API key)
+     */
+    sttProvider: SttProviderEnum.default("whisper-mlx"),
+    /**
+     * Fallback STT provider when the primary is unavailable or fails.
+     * - "openai-realtime": Fall back to OpenAI Realtime WebSocket API
+     * - "openai": Fall back to OpenAI standard Whisper API
+     * - "whisper-mlx": Fall back to local MLX Whisper
+     * - "none": No fallback
+     */
+    sttFallback: z
+      .enum(["openai-realtime", "openai", "whisper-mlx", "none"])
+      .default("openai-realtime"),
     /** OpenAI API key for Realtime API (uses OPENAI_API_KEY env if not set) */
     openaiApiKey: z.string().min(1).optional(),
     /** OpenAI transcription model (default: gpt-4o-transcribe) */
     sttModel: z.string().min(1).default("gpt-4o-transcribe"),
+    /**
+     * HuggingFace model repo for Whisper MLX local transcription.
+     * Examples: "mlx-community/whisper-large-v3-turbo", "mlx-community/whisper-small"
+     */
+    whisperMlxModel: z.string().min(1).default("mlx-community/whisper-large-v3-turbo"),
+    /** Python executable path for mlx_whisper (default: auto-detect "python3") */
+    whisperMlxPython: z.string().min(1).optional(),
+    /** Language hint for Whisper MLX (e.g. "en"). Omit for auto-detect. */
+    whisperMlxLanguage: z.string().min(1).optional(),
     /** VAD silence duration in ms before considering speech ended */
     silenceDurationMs: z.number().int().positive().default(800),
     /** VAD threshold 0-1 (higher = less sensitive) */
     vadThreshold: z.number().min(0).max(1).default(0.5),
     /** WebSocket path for media stream connections */
     streamPath: z.string().min(1).default("/voice/stream"),
+    /** Enable barge-in (user can interrupt agent TTS). Default: true */
+    bargeInEnabled: z.boolean().default(true),
+    /** Minimum speech duration (ms) before triggering barge-in to avoid false positives */
+    bargeInMinDurationMs: z.number().int().min(0).max(2000).default(300),
   })
   .strict()
   .default({
     enabled: false,
-    sttProvider: "openai-realtime",
+    sttProvider: "whisper-mlx",
+    sttFallback: "openai-realtime",
     sttModel: "gpt-4o-transcribe",
+    whisperMlxModel: "mlx-community/whisper-large-v3-turbo",
     silenceDurationMs: 800,
     vadThreshold: 0.5,
     streamPath: "/voice/stream",
+    bargeInEnabled: true,
+    bargeInMinDurationMs: 300,
   });
 export type VoiceCallStreamingConfig = z.infer<typeof VoiceCallStreamingConfigSchema>;
 
@@ -300,7 +378,7 @@ export const VoiceCallConfigSchema = z
     outbound: OutboundConfigSchema,
 
     /** Maximum call duration in seconds */
-    maxDurationSeconds: z.number().int().positive().default(300),
+    maxDurationSeconds: z.number().int().positive().default(3600),
 
     /**
      * Maximum age of a call in seconds before it is automatically reaped.
@@ -360,6 +438,10 @@ export const VoiceCallConfigSchema = z
 
     /** Timeout for response generation in ms (default 30s) */
     responseTimeoutMs: z.number().int().positive().default(30000),
+
+    /** Maximum tool iterations per voice turn (lower than default to avoid long hangs).
+     *  0 = use the agent default. */
+    maxToolIterations: z.number().int().nonnegative().default(5),
   })
   .strict();
 
@@ -400,11 +482,56 @@ export function resolveVoiceCallConfig(config: VoiceCallConfig): VoiceCallConfig
 
   // 3CX (SIP over WebSocket -- no webhooks needed)
   if (resolved.provider === "threecx") {
-    resolved.threecx = resolved.threecx ?? {};
-    resolved.threecx.server = resolved.threecx.server ?? process.env.THREECX_SERVER;
-    resolved.threecx.extension = resolved.threecx.extension ?? process.env.THREECX_EXTENSION;
-    resolved.threecx.password = resolved.threecx.password ?? process.env.THREECX_PASSWORD;
-    resolved.threecx.domain = resolved.threecx.domain ?? process.env.THREECX_DOMAIN;
+    // #region agent log
+    fetch("http://127.0.0.1:7245/ingest/bb17bc8b-bc5f-4f49-b97d-e45c4a6a3bda", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        location: "config.ts:resolveVoiceCallConfig:threecx:before",
+        message: "ThreeCX config BEFORE resolution",
+        data: {
+          hasThreecx: !!resolved.threecx,
+          rtpPortMin: resolved.threecx?.rtpPortMin,
+          rtpPortMax: resolved.threecx?.rtpPortMax,
+        },
+        hypothesisId: "CONFIG",
+        timestamp: Date.now(),
+      }),
+    }).catch(() => {});
+    // #endregion
+    const cx = resolved.threecx ?? {
+      drachtioHost: "127.0.0.1",
+      drachtioPort: 9022,
+      drachtioSecret: "cymru",
+      rtpPortMin: 21000,
+      rtpPortMax: 21100,
+      freeswitchHost: "127.0.0.1",
+      freeswitchPort: 8122,
+      audioForkPort: 3001,
+    };
+    cx.server = cx.server ?? process.env.THREECX_SERVER;
+    cx.extension = cx.extension ?? process.env.THREECX_EXTENSION;
+    cx.authId = cx.authId ?? process.env.THREECX_AUTH_ID;
+    cx.password = cx.password ?? process.env.THREECX_PASSWORD;
+    cx.domain = cx.domain ?? process.env.THREECX_DOMAIN;
+    cx.externalIp = cx.externalIp ?? process.env.THREECX_EXTERNAL_IP;
+    // Ensure RTP port config is preserved from user config (not overwritten by defaults)
+    cx.rtpPortMin = cx.rtpPortMin ?? 21000;
+    cx.rtpPortMax = cx.rtpPortMax ?? 21100;
+    resolved.threecx = cx;
+    // #region agent log
+    fetch("http://127.0.0.1:7245/ingest/bb17bc8b-bc5f-4f49-b97d-e45c4a6a3bda", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        location: "config.ts:resolveVoiceCallConfig:threecx:after",
+        message: "ThreeCX config AFTER resolution",
+        data: { rtpPortMin: cx.rtpPortMin, rtpPortMax: cx.rtpPortMax },
+        hypothesisId: "CONFIG",
+        timestamp: Date.now(),
+      }),
+    }).catch(() => {});
+    // #endregion
   }
 
   // Tunnel Config

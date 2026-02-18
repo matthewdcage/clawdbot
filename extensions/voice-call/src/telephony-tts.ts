@@ -11,6 +11,7 @@ export type TelephonyTtsRuntime = {
     success: boolean;
     audioBuffer?: Buffer;
     sampleRate?: number;
+    outputFormat?: string;
     provider?: string;
     error?: string;
   }>;
@@ -39,6 +40,12 @@ export function createTelephonyTtsProvider(params: {
         throw new Error(result.error ?? "TTS conversion failed");
       }
 
+      // If server returned mu-law directly, use it as-is (no conversion needed)
+      if (result.outputFormat === "mulaw") {
+        return result.audioBuffer;
+      }
+
+      // Otherwise convert PCM to mu-law 8kHz
       return convertPcmToMulaw8k(result.audioBuffer, result.sampleRate);
     },
   };

@@ -50,8 +50,8 @@ export interface RtpEndpoint {
 const DEFAULT_CONFIG: Required<MediaBridgeConfig> = {
   captureSampleRate: 16000,
   captureChunkMs: 20,
-  rtpPortMin: 20000,
-  rtpPortMax: 20100,
+  rtpPortMin: 21000,
+  rtpPortMax: 21100,
 };
 
 // RTP header size (fixed 12 bytes, no CSRC)
@@ -205,7 +205,7 @@ export function parseRtpPacket(packet: Buffer): {
  * OpenClaw's PCM-based STT/TTS pipeline.
  *
  * Usage:
- *   1. Create bridge: `new ThreeCXMediaBridge({ rtpPortMin: 20000, rtpPortMax: 20100 })`
+ *   1. Create bridge: `new ThreeCXMediaBridge({ rtpPortMin: 21000, rtpPortMax: 21100 })`
  *   2. Start RTP: `const localPort = await bridge.startRtp()`
  *   3. Set remote endpoint after SDP answer: `bridge.setRemoteEndpoint(host, port)`
  *   4. Start capturing: `bridge.startCapture()`
@@ -218,6 +218,40 @@ export function parseRtpPacket(packet: Buffer): {
  *   - "error": Emitted on audio processing errors
  */
 export class ThreeCXMediaBridge extends EventEmitter {
+  // ---------------------------------------------------------------------------
+  // Static Port Tracking (for debugging/leak detection)
+  // ---------------------------------------------------------------------------
+
+  /** Track all currently allocated RTP ports across all bridge instances */
+  private static allocatedPorts = new Set<number>();
+
+  /** Get count of currently allocated ports */
+  static get activePortCount(): number {
+    return ThreeCXMediaBridge.allocatedPorts.size;
+  }
+
+  /** Get list of currently allocated ports (sorted for readability) */
+  static get activePorts(): number[] {
+    return [...ThreeCXMediaBridge.allocatedPorts].sort((a, b) => a - b);
+  }
+
+  /**
+   * Clear all allocated ports from tracking.
+   * Call this on provider connect/disconnect to reset stale state
+   * (e.g., after gateway restart where close() wasn't called).
+   */
+  static clearAllocatedPorts(): void {
+    const count = ThreeCXMediaBridge.allocatedPorts.size;
+    ThreeCXMediaBridge.allocatedPorts.clear();
+    if (count > 0) {
+      console.log(`[threecx-media] Cleared ${count} allocated ports from tracking`);
+    }
+  }
+
+  // ---------------------------------------------------------------------------
+  // Instance Properties
+  // ---------------------------------------------------------------------------
+
   private config: Required<MediaBridgeConfig>;
   private socket: dgram.Socket | null = null;
   private localPort = 0;
@@ -259,7 +293,24 @@ export class ThreeCXMediaBridge extends EventEmitter {
     const { rtpPortMin, rtpPortMax } = this.config;
     let bound = false;
 
+    // Debug: log port pool state at start of allocation
+    const totalPorts = rtpPortMax - rtpPortMin + 1;
+    const alreadyAllocated = ThreeCXMediaBridge.allocatedPorts.size;
+    console.log(
+      `[voice-call] Port pool: range=${rtpPortMin}-${rtpPortMax}, total=${totalPorts}, ` +
+        `already_allocated=${alreadyAllocated}, available=${totalPorts - alreadyAllocated}`,
+    );
+
+    // Track bind failures for diagnostics
+    const bindErrors: Array<{ port: number; error: string }> = [];
+
     for (let port = rtpPortMin; port <= rtpPortMax; port++) {
+      // Skip ports we've already allocated in this process
+      if (ThreeCXMediaBridge.allocatedPorts.has(port)) {
+        bindErrors.push({ port, error: "already allocated by this process" });
+        continue;
+      }
+
       try {
         await new Promise<void>((resolve, reject) => {
           this.socket!.once("error", reject);
@@ -269,10 +320,15 @@ export class ThreeCXMediaBridge extends EventEmitter {
           });
         });
         this.localPort = port;
+        ThreeCXMediaBridge.allocatedPorts.add(port);
         bound = true;
+        console.log(`[voice-call] RTP port ${port} bound successfully`);
         break;
-      } catch {
-        // Port in use, try next
+      } catch (err) {
+        // Port in use, record error and try next
+        const errMsg = err instanceof Error ? err.message : String(err);
+        bindErrors.push({ port, error: errMsg });
+
         if (port === rtpPortMax) {
           break;
         }
@@ -283,13 +339,79 @@ export class ThreeCXMediaBridge extends EventEmitter {
     }
 
     if (!bound) {
+      // Log detailed diagnostics about why all ports failed
+      const sampleErrors = bindErrors.slice(0, 5);
+      console.error(
+        `[voice-call] CRITICAL: No RTP port available in range ${rtpPortMin}-${rtpPortMax}`,
+      );
+      console.error(
+        `[voice-call] Port pool state: allocated_by_us=${ThreeCXMediaBridge.activePorts.join(",")}`,
+      );
+      console.error(`[voice-call] Sample bind errors: ${JSON.stringify(sampleErrors)}`);
+
+      // #region agent log
+      fetch("http://127.0.0.1:7245/ingest/bb17bc8b-bc5f-4f49-b97d-e45c4a6a3bda", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          location: "threecx-media.ts:startRtp",
+          message: "No RTP port available",
+          data: {
+            rtpPortMin,
+            rtpPortMax,
+            allocatedByUs: ThreeCXMediaBridge.activePorts,
+            sampleErrors,
+          },
+          hypothesisId: "C",
+          timestamp: Date.now(),
+        }),
+      }).catch(() => {});
+      // #endregion
       this.socket.close();
       this.socket = null;
       throw new Error(`No available RTP port in range ${rtpPortMin}-${rtpPortMax}`);
     }
 
+    // #region agent log
+    fetch("http://127.0.0.1:7245/ingest/bb17bc8b-bc5f-4f49-b97d-e45c4a6a3bda", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        location: "threecx-media.ts:startRtp",
+        message: "RTP port bound",
+        data: { localPort: this.localPort, rtpPortMin, rtpPortMax },
+        hypothesisId: "C",
+        timestamp: Date.now(),
+      }),
+    }).catch(() => {});
+    // #endregion
+
     // Handle incoming RTP packets
-    this.socket.on("message", (msg: Buffer) => {
+    // #region agent log
+    let rtpPacketCount = 0;
+    // #endregion
+    this.socket.on("message", (msg: Buffer, rinfo: { address: string; port: number }) => {
+      // #region agent log
+      rtpPacketCount++;
+      if (rtpPacketCount <= 3 || rtpPacketCount % 100 === 0) {
+        fetch("http://127.0.0.1:7245/ingest/bb17bc8b-bc5f-4f49-b97d-e45c4a6a3bda", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            location: "threecx-media.ts:onMessage",
+            message: "RTP packet received",
+            data: {
+              packetNum: rtpPacketCount,
+              from: `${rinfo.address}:${rinfo.port}`,
+              size: msg.length,
+              localPort: this.localPort,
+            },
+            hypothesisId: "T",
+            timestamp: Date.now(),
+          }),
+        }).catch(() => {});
+      }
+      // #endregion
       this.handleRtpPacket(msg);
     });
 
@@ -376,6 +498,10 @@ export class ThreeCXMediaBridge extends EventEmitter {
       return;
     }
 
+    // Emit raw mu-law payload for STT providers that accept G.711 natively
+    // (e.g. OpenAI Realtime API), avoiding a wasteful decode/re-encode round-trip.
+    this.emit("rawPayload", parsed.payload);
+
     // Decode G.711 mu-law to PCM 16-bit LE (8kHz)
     const pcm8k = decodeMulaw(parsed.payload);
 
@@ -392,9 +518,35 @@ export class ThreeCXMediaBridge extends EventEmitter {
   /** Start capturing remote audio and emitting PCM chunks. */
   startCapture(): void {
     if (this.capturing || this.closed) {
+      // #region agent log
+      fetch("http://127.0.0.1:7245/ingest/bb17bc8b-bc5f-4f49-b97d-e45c4a6a3bda", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          location: "threecx-media.ts:startCapture",
+          message: "Capture already active or closed",
+          data: { capturing: this.capturing, closed: this.closed },
+          hypothesisId: "V",
+          timestamp: Date.now(),
+        }),
+      }).catch(() => {});
+      // #endregion
       return;
     }
     this.capturing = true;
+    // #region agent log
+    fetch("http://127.0.0.1:7245/ingest/bb17bc8b-bc5f-4f49-b97d-e45c4a6a3bda", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        location: "threecx-media.ts:startCapture",
+        message: "Audio capture started",
+        data: { localPort: this.localPort, remoteEndpoint: this.remoteEndpoint },
+        hypothesisId: "V",
+        timestamp: Date.now(),
+      }),
+    }).catch(() => {});
+    // #endregion
 
     // Flush accumulated audio at the configured interval
     this.captureInterval = setInterval(() => {
@@ -510,6 +662,75 @@ export class ThreeCXMediaBridge extends EventEmitter {
     }
   }
 
+  /**
+   * Inject pre-encoded G.711 mu-law audio directly into the outbound RTP stream.
+   * Skips the PCM-to-mulaw conversion in injectAudio() -- use this when the
+   * TTS pipeline already produces mu-law 8kHz (e.g. TelephonyTtsProvider).
+   *
+   * @param signal Optional AbortSignal for barge-in: when aborted, stops sending
+   *               mid-stream (checked every 20ms frame boundary).
+   */
+  async injectMulaw(mulaw: Buffer, signal?: AbortSignal): Promise<void> {
+    if (this.closed || !this.socket || !this.remoteEndpoint) {
+      // #region agent log
+      fetch("http://127.0.0.1:7245/ingest/bb17bc8b-bc5f-4f49-b97d-e45c4a6a3bda", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          location: "threecx-media.ts:injectMulaw",
+          message: "Cannot inject - not ready",
+          data: { closed: this.closed, hasSocket: !!this.socket, hasRemote: !!this.remoteEndpoint },
+          hypothesisId: "U",
+          timestamp: Date.now(),
+        }),
+      }).catch(() => {});
+      // #endregion
+      return;
+    }
+    // #region agent log
+    fetch("http://127.0.0.1:7245/ingest/bb17bc8b-bc5f-4f49-b97d-e45c4a6a3bda", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        location: "threecx-media.ts:injectMulaw",
+        message: "Sending TTS audio",
+        data: {
+          mulawLen: mulaw.length,
+          remoteEndpoint: this.remoteEndpoint,
+          localPort: this.localPort,
+        },
+        hypothesisId: "U",
+        timestamp: Date.now(),
+      }),
+    }).catch(() => {});
+    // #endregion
+
+    for (let offset = 0; offset < mulaw.length; offset += SAMPLES_PER_FRAME) {
+      // Barge-in: stop sending if caller interrupted
+      if (signal?.aborted) {
+        return;
+      }
+
+      const frameSize = Math.min(SAMPLES_PER_FRAME, mulaw.length - offset);
+      const payload = mulaw.subarray(offset, offset + frameSize);
+
+      const rtpPacket = buildRtpPacket(this.sequenceNumber, this.rtpTimestamp, this.ssrc, payload);
+      this.sequenceNumber = (this.sequenceNumber + 1) & 0xffff;
+      this.rtpTimestamp += frameSize;
+
+      await new Promise<void>((resolve, reject) => {
+        this.socket!.send(rtpPacket, this.remoteEndpoint!.port, this.remoteEndpoint!.host, (err) =>
+          err ? reject(err) : resolve(),
+        );
+      });
+
+      // Pace packets at 20ms intervals for real-time playback
+      if (frameSize === SAMPLES_PER_FRAME && offset + SAMPLES_PER_FRAME < mulaw.length) {
+        await new Promise((r) => setTimeout(r, 20));
+      }
+    }
+  }
+
   // ---------------------------------------------------------------------------
   // Lifecycle
   // ---------------------------------------------------------------------------
@@ -530,6 +751,11 @@ export class ThreeCXMediaBridge extends EventEmitter {
         // Already closed
       }
       this.socket = null;
+    }
+
+    // Remove port from tracking (prevents false leak detection)
+    if (this.localPort > 0) {
+      ThreeCXMediaBridge.allocatedPorts.delete(this.localPort);
     }
 
     this.remoteEndpoint = null;

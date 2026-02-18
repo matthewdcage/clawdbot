@@ -131,6 +131,7 @@ export function processEvent(ctx: EventContext, event: NormalizedEvent): void {
       return;
     }
 
+    const originalCallId = event.callId;
     call = createInboundCall({
       ctx,
       providerCallId: event.providerCallId,
@@ -140,10 +141,23 @@ export function processEvent(ctx: EventContext, event: NormalizedEvent): void {
 
     // Normalize event to internal ID for downstream consumers.
     event.callId = call.callId;
+
+    // Map the original provider-internal callId (e.g. ThreeCX's UUID) so that
+    // subsequent events for the same physical call can be correlated via findCall.
+    if (originalCallId && originalCallId !== call.callId) {
+      ctx.providerCallIdMap.set(originalCallId, call.callId);
+    }
   }
 
   if (!call) {
     return;
+  }
+
+  // Always normalize event.callId to the CallManager UUID so that
+  // downstream consumers (conversation loop, UI events) see a consistent
+  // identifier regardless of which provider-internal ID was on the raw event.
+  if (event.callId !== call.callId) {
+    event.callId = call.callId;
   }
 
   if (event.providerCallId && event.providerCallId !== call.providerCallId) {
@@ -195,6 +209,11 @@ export function processEvent(ctx: EventContext, event: NormalizedEvent): void {
         addTranscriptEntry(call, "user", event.transcript);
         resolveTranscriptWaiter(ctx, call.callId, event.transcript);
       }
+      transitionState(call, "listening");
+      break;
+
+    case "call.interrupted":
+      // Barge-in: caller interrupted agent TTS; transition to listening
       transitionState(call, "listening");
       break;
 

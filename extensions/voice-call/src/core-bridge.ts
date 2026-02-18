@@ -56,6 +56,18 @@ type CoreAgentDeps = {
     entry: unknown,
     opts?: { agentId?: string },
   ) => string;
+  /** Register a run context so the gateway correlates events with the session. */
+  registerAgentRunContext: (
+    runId: string,
+    context: { sessionKey?: string; verboseLevel?: string; isHeartbeat?: boolean },
+  ) => void;
+  /** Emit an agent event to the gateway for web UI updates. */
+  emitAgentEvent: (event: {
+    runId: string;
+    stream: string;
+    data: Record<string, unknown>;
+    sessionKey?: string;
+  }) => void;
   DEFAULT_MODEL: string;
   DEFAULT_PROVIDER: string;
 };
@@ -135,6 +147,9 @@ async function importCoreExtensionAPI(): Promise<{
   loadSessionStore: CoreAgentDeps["loadSessionStore"];
   saveSessionStore: CoreAgentDeps["saveSessionStore"];
   resolveSessionFilePath: CoreAgentDeps["resolveSessionFilePath"];
+
+  registerAgentRunContext: CoreAgentDeps["registerAgentRunContext"];
+  emitAgentEvent: CoreAgentDeps["emitAgentEvent"];
 }> {
   // Do not import any other module. You can't touch this or you will be fired.
   const distPath = path.join(resolveOpenClawRoot(), "dist", "extensionAPI.js");
