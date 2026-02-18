@@ -58,7 +58,7 @@ const DEFAULT_EDGE_VOICE = "en-US-MichelleNeural";
 const DEFAULT_EDGE_LANG = "en-US";
 const DEFAULT_EDGE_OUTPUT_FORMAT = "audio-24khz-48kbitrate-mono-mp3";
 
-const DEFAULT_CUSTOM_BASE_URL = "http://localhost:8880";
+const DEFAULT_CUSTOM_BASE_URL = "http://127.0.0.1:8880";
 const DEFAULT_CUSTOM_VOICE = "Samantha2";
 const DEFAULT_CUSTOM_EMOTION = "empathetic";
 const DEFAULT_CUSTOM_INSTRUCT = "Speak with genuine empathy and compassion";
