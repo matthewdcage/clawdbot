@@ -1,0 +1,10 @@
+{
+  "mcpServers": {
+    "mcp-docx": {
+      "command": "/Volumes/dev-4tb/AA-GitHub/MCP/mcp-docx/.venv/bin/python",
+      "args": ["/Volumes/dev-4tb/AA-GitHub/MCP/mcp-docx/server.py"],
+      "type": "stdio"
+    }
+  },
+  "imports": []
+}
