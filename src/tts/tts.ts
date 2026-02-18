@@ -664,7 +664,7 @@ export async function textToSpeech(params: {
 
       if (provider === "custom") {
         if (!config.custom.baseUrl) {
-          lastError = "custom: no baseUrl configured";
+          errors.push("custom: no baseUrl configured");
           continue;
         }
 
@@ -788,8 +788,7 @@ export async function textToSpeechTelephony(params: {
 
       if (provider === "custom") {
         if (!config.custom.baseUrl) {
-          lastError = "custom: no baseUrl configured";
-          console.error(`[tts-telephony] SKIP custom: no baseUrl`);
+          errors.push("custom: no baseUrl configured");
           continue;
         }
         console.error(
@@ -884,7 +883,6 @@ export async function textToSpeechTelephony(params: {
     }
   }
 
-  // errors array already captured in the return below
   return {
     success: false,
     error: `TTS conversion failed: ${errors.join("; ") || "no providers available"}`,
