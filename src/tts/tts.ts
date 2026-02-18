@@ -26,6 +26,7 @@ import { stripMarkdown } from "../line/markdown-to-line.js";
 import { isVoiceCompatibleAudio } from "../media/audio.js";
 import { CONFIG_DIR, resolveUserPath } from "../utils.js";
 import {
+  customTTS,
   edgeTTS,
   elevenLabsTTS,
   inferEdgeExtension,
@@ -37,7 +38,9 @@ import {
   openaiTTS,
   parseTtsDirectives,
   scheduleCleanup,
+  stripWavHeader,
   summarizeText,
+  type CustomTtsConfig,
 } from "./tts-core.js";
 export { OPENAI_TTS_MODELS, OPENAI_TTS_VOICES } from "./tts-core.js";
 
@@ -54,6 +57,15 @@ const DEFAULT_OPENAI_VOICE = "alloy";
 const DEFAULT_EDGE_VOICE = "en-US-MichelleNeural";
 const DEFAULT_EDGE_LANG = "en-US";
 const DEFAULT_EDGE_OUTPUT_FORMAT = "audio-24khz-48kbitrate-mono-mp3";
+
+const DEFAULT_CUSTOM_BASE_URL = "http://localhost:8880";
+const DEFAULT_CUSTOM_VOICE = "Samantha2";
+const DEFAULT_CUSTOM_EMOTION = "empathetic";
+const DEFAULT_CUSTOM_INSTRUCT = "Speak with genuine empathy and compassion";
+const DEFAULT_CUSTOM_LANGUAGE = "auto";
+const DEFAULT_CUSTOM_SPEED = 1.0;
+const DEFAULT_CUSTOM_TEMPERATURE = 0.7;
+const DEFAULT_CUSTOM_STREAMING = true;
 
 const DEFAULT_ELEVENLABS_VOICE_SETTINGS = {
   stability: 0.5,
@@ -127,6 +139,7 @@ export type ResolvedTtsConfig = {
     proxy?: string;
     timeoutMs?: number;
   };
+  custom: CustomTtsConfig;
   prefsPath?: string;
   maxTextLength: number;
   timeoutMs: number;
@@ -301,6 +314,19 @@ export function resolveTtsConfig(cfg: OpenClawConfig): ResolvedTtsConfig {
       proxy: raw.edge?.proxy?.trim() || undefined,
       timeoutMs: raw.edge?.timeoutMs,
     },
+    custom: {
+      baseUrl: raw.custom?.baseUrl?.trim() || DEFAULT_CUSTOM_BASE_URL,
+      apiKey: raw.custom?.apiKey,
+      voice: raw.custom?.voice?.trim() || DEFAULT_CUSTOM_VOICE,
+      emotion: raw.custom?.emotion?.trim() || DEFAULT_CUSTOM_EMOTION,
+      instruct: raw.custom?.instruct?.trim() || DEFAULT_CUSTOM_INSTRUCT,
+      language: raw.custom?.language?.trim() || DEFAULT_CUSTOM_LANGUAGE,
+      speed: raw.custom?.speed ?? DEFAULT_CUSTOM_SPEED,
+      temperature: raw.custom?.temperature ?? DEFAULT_CUSTOM_TEMPERATURE,
+      streaming: raw.custom?.streaming ?? DEFAULT_CUSTOM_STREAMING,
+      voiceMode: raw.custom?.voiceMode ?? "auto",
+      timeoutMs: raw.custom?.timeoutMs ?? raw.timeoutMs ?? DEFAULT_TIMEOUT_MS,
+    },
     prefsPath: raw.prefsPath,
     maxTextLength: raw.maxTextLength ?? DEFAULT_MAX_TEXT_LENGTH,
     timeoutMs: raw.timeoutMs ?? DEFAULT_TIMEOUT_MS,
@@ -433,6 +459,8 @@ export function getTtsProvider(config: ResolvedTtsConfig, prefsPath: string): Tt
     return config.provider;
   }
 
+  // Custom TTS is preferred when explicitly configured with a non-default baseUrl
+  // or when it's the only provider available
   if (resolveTtsApiKey(config, "openai")) {
     return "openai";
   }
@@ -503,10 +531,16 @@ export function resolveTtsApiKey(
   if (provider === "openai") {
     return config.openai.apiKey || process.env.OPENAI_API_KEY;
   }
+  if (provider === "custom") {
+    // Custom TTS may run locally without auth; return a placeholder so the
+    // provider is not skipped by "no API key" checks. The actual apiKey
+    // (if any) is sent via X-API-Key header inside customTTS().
+    return config.custom.apiKey || process.env.CUSTOM_TTS_API_KEY || "local";
+  }
   return undefined;
 }
 
-export const TTS_PROVIDERS = ["openai", "elevenlabs", "edge"] as const;
+export const TTS_PROVIDERS = ["openai", "elevenlabs", "edge", "custom"] as const;
 
 export function resolveTtsProviderOrder(primary: TtsProvider): TtsProvider[] {
   return [primary, ...TTS_PROVIDERS.filter((provider) => provider !== primary)];
@@ -515,6 +549,10 @@ export function resolveTtsProviderOrder(primary: TtsProvider): TtsProvider[] {
 export function isTtsProviderConfigured(config: ResolvedTtsConfig, provider: TtsProvider): boolean {
   if (provider === "edge") {
     return config.edge.enabled;
+  }
+  if (provider === "custom") {
+    // Custom TTS is considered configured if a baseUrl is set (even the default localhost)
+    return Boolean(config.custom.baseUrl);
   }
   return Boolean(resolveTtsApiKey(config, provider));
 }
@@ -624,6 +662,33 @@ export async function textToSpeech(params: {
         };
       }
 
+      if (provider === "custom") {
+        if (!config.custom.baseUrl) {
+          lastError = "custom: no baseUrl configured";
+          continue;
+        }
+
+        const result = await customTTS({
+          text: params.text,
+          config: config.custom,
+        });
+
+        const latencyMs = Date.now() - providerStart;
+        const tempDir = mkdtempSync(path.join(tmpdir(), "tts-"));
+        const audioPath = path.join(tempDir, `voice-${Date.now()}.wav`);
+        writeFileSync(audioPath, result.audioBuffer);
+        scheduleCleanup(tempDir);
+
+        return {
+          success: true,
+          audioPath,
+          latencyMs,
+          provider,
+          outputFormat: "wav",
+          voiceCompatible: false,
+        };
+      }
+
       const apiKey = resolveTtsApiKey(config, provider);
       if (!apiKey) {
         errors.push(`${provider}: no API key`);
@@ -721,6 +786,35 @@ export async function textToSpeechTelephony(params: {
         continue;
       }
 
+      if (provider === "custom") {
+        if (!config.custom.baseUrl) {
+          lastError = "custom: no baseUrl configured";
+          console.error(`[tts-telephony] SKIP custom: no baseUrl`);
+          continue;
+        }
+        console.error(
+          `[tts-telephony] CALLING customTTS: baseUrl=${config.custom.baseUrl} voice=${config.custom.voice}`,
+        );
+        // Custom TTS returns WAV (PCM 16-bit). Strip the header for telephony.
+        const result = await customTTS({
+          text: params.text,
+          config: config.custom,
+        });
+        const pcmBuffer = stripWavHeader(result.audioBuffer);
+        console.error(
+          `[tts-telephony] customTTS OK: ${result.audioBuffer.length} bytes, sampleRate=${result.sampleRate}`,
+        );
+
+        return {
+          success: true,
+          audioBuffer: pcmBuffer,
+          latencyMs: Date.now() - providerStart,
+          provider,
+          outputFormat: "pcm",
+          sampleRate: result.sampleRate,
+        };
+      }
+
       const apiKey = resolveTtsApiKey(config, provider);
       if (!apiKey) {
         errors.push(`${provider}: no API key`);
@@ -776,6 +870,7 @@ export async function textToSpeechTelephony(params: {
     }
   }
 
+  // errors array already captured in the return below
   return {
     success: false,
     error: `TTS conversion failed: ${errors.join("; ") || "no providers available"}`,

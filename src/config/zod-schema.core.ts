@@ -165,7 +165,7 @@ export const MarkdownConfigSchema = z
   .strict()
   .optional();
 
-export const TtsProviderSchema = z.enum(["elevenlabs", "openai", "edge"]);
+export const TtsProviderSchema = z.enum(["elevenlabs", "openai", "edge", "custom"]);
 export const TtsModeSchema = z.enum(["final", "all"]);
 export const TtsAutoSchema = z.enum(["off", "always", "inbound", "tagged"]);
 export const TtsConfigSchema = z
@@ -229,6 +229,22 @@ export const TtsConfigSchema = z
         volume: z.string().optional(),
         saveSubtitles: z.boolean().optional(),
         proxy: z.string().optional(),
+        timeoutMs: z.number().int().min(1000).max(120000).optional(),
+      })
+      .strict()
+      .optional(),
+    custom: z
+      .object({
+        baseUrl: z.string().optional(),
+        apiKey: z.string().optional().register(sensitive),
+        voice: z.string().optional(),
+        emotion: z.string().optional(),
+        instruct: z.string().optional(),
+        language: z.string().optional(),
+        speed: z.number().min(0.5).max(2).optional(),
+        temperature: z.number().min(0.1).max(1.5).optional(),
+        streaming: z.boolean().optional(),
+        voiceMode: z.enum(["preset", "clone"]).optional(),
         timeoutMs: z.number().int().min(1000).max(120000).optional(),
       })
       .strict()

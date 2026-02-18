@@ -671,3 +671,163 @@ export async function edgeTTS(params: {
   });
   await tts.ttsPromise(text, outputPath);
 }
+
+// ---------------------------------------------------------------------------
+// Custom / Generic TTS (Qwen3 Voice Studio compatible)
+// ---------------------------------------------------------------------------
+
+/** Known preset voice names in Qwen3 Voice Studio (from /v1/voices). */
+const CUSTOM_PRESET_VOICES = new Set([
+  "serena",
+  "vivian",
+  "uncle_fu",
+  "ryan",
+  "aiden",
+  "ono_anna",
+  "sohee",
+  "eric",
+  "dylan",
+]);
+
+export type CustomTtsConfig = {
+  baseUrl: string;
+  apiKey?: string;
+  voice: string;
+  emotion?: string;
+  instruct?: string;
+  language: string;
+  speed: number;
+  temperature: number;
+  streaming: boolean;
+  voiceMode: "preset" | "clone" | "auto";
+  timeoutMs: number;
+};
+
+/**
+ * Resolve whether to use the preset or clone endpoint for a given voice.
+ * "auto" checks against the known preset voice list.
+ */
+function resolveCustomVoiceMode(
+  voice: string,
+  mode: "preset" | "clone" | "auto",
+): "preset" | "clone" {
+  if (mode === "auto") {
+    return CUSTOM_PRESET_VOICES.has(voice.toLowerCase()) ? "preset" : "clone";
+  }
+  return mode;
+}
+
+/**
+ * Generate speech using a custom/generic TTS API (Qwen3 Voice Studio compatible).
+ *
+ * Preset voices → POST /v1/tts (JSON) or /v1/tts/stream (JSON)
+ * Clone voices  → POST /v1/tts/clone (multipart) or /v1/tts/clone/stream (multipart)
+ *
+ * Returns raw WAV bytes (PCM 16-bit, 48kHz mono by default from Voice Studio).
+ */
+export async function customTTS(params: {
+  text: string;
+  config: CustomTtsConfig;
+}): Promise<{ audioBuffer: Buffer; sampleRate: number }> {
+  const { text, config } = params;
+  const mode = resolveCustomVoiceMode(config.voice, config.voiceMode);
+  const base = config.baseUrl.replace(/\/+$/, "");
+
+  const headers: Record<string, string> = {};
+  if (config.apiKey) {
+    headers["X-API-Key"] = config.apiKey;
+  }
+
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), config.timeoutMs);
+
+  try {
+    let response: Response;
+
+    if (mode === "preset") {
+      // Preset voices use JSON body
+      const endpoint = config.streaming ? `${base}/v1/tts/stream` : `${base}/v1/tts`;
+      const body: Record<string, unknown> = {
+        text,
+        speaker: config.voice,
+        language: config.language,
+        speed: config.speed,
+        temperature: config.temperature,
+      };
+      if (config.emotion) {
+        body.emotion = config.emotion;
+      }
+      if (config.instruct) {
+        body.instruct = config.instruct;
+      }
+      headers["Content-Type"] = "application/json";
+
+      response = await fetch(endpoint, {
+        method: "POST",
+        headers,
+        body: JSON.stringify(body),
+        signal: controller.signal,
+      });
+    } else {
+      // Clone voices use the JSON endpoint (avoids FormData parsing issues)
+      const endpoint = config.streaming
+        ? `${base}/v1/tts/clone/stream/json`
+        : `${base}/v1/tts/clone/json`;
+
+      const body: Record<string, unknown> = {
+        text,
+        voice_name: config.voice,
+        language: config.language,
+        temperature: config.temperature,
+      };
+      if (config.streaming) {
+        body.streaming_interval = 1.5;
+      }
+      headers["Content-Type"] = "application/json";
+
+      response = await fetch(endpoint, {
+        method: "POST",
+        headers,
+        body: JSON.stringify(body),
+        signal: controller.signal,
+      });
+    }
+
+    if (!response.ok) {
+      let detail = `Custom TTS API error (${response.status})`;
+      try {
+        const errBody = (await response.json()) as { detail?: string };
+        if (errBody.detail) {
+          detail = `Custom TTS: ${errBody.detail}`;
+        }
+      } catch {
+        // ignore JSON parse failure
+      }
+      throw new Error(detail);
+    }
+
+    const audioBuffer = Buffer.from(await response.arrayBuffer());
+
+    // Parse sample rate from WAV header if present (bytes 24-27, little-endian uint32).
+    // Falls back to 48000 which is the Voice Studio default output sample rate.
+    let sampleRate = 48000;
+    if (audioBuffer.length >= 44 && audioBuffer.toString("ascii", 0, 4) === "RIFF") {
+      sampleRate = audioBuffer.readUInt32LE(24);
+    }
+
+    return { audioBuffer, sampleRate };
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
+/**
+ * Strip the 44-byte WAV header from a buffer to get raw PCM data.
+ * Returns the original buffer if it doesn't look like a WAV file.
+ */
+export function stripWavHeader(buffer: Buffer): Buffer {
+  if (buffer.length >= 44 && buffer.toString("ascii", 0, 4) === "RIFF") {
+    return buffer.subarray(44);
+  }
+  return buffer;
+}

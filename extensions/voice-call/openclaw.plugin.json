@@ -1,5 +1,6 @@
 {
   "id": "voice-call",
+  "channels": ["voice"],
   "uiHints": {
     "provider": {
       "label": "Provider",
@@ -57,6 +58,63 @@
       "label": "3CX SIP Domain",
       "placeholder": "1442.3cx.cloud"
     },
+    "threecx.authId": {
+      "label": "3CX Auth ID",
+      "help": "SIP authentication ID (if different from extension number)",
+      "advanced": true
+    },
+    "threecx.drachtioHost": {
+      "label": "Drachtio Server Host",
+      "help": "drachtio-server TCP host (default: 127.0.0.1)",
+      "advanced": true
+    },
+    "threecx.drachtioPort": {
+      "label": "Drachtio Server Port",
+      "help": "drachtio-server TCP port (default: 9022)",
+      "advanced": true
+    },
+    "threecx.drachtioSecret": {
+      "label": "Drachtio Shared Secret",
+      "help": "drachtio-server shared secret (default: cymru)",
+      "sensitive": true,
+      "advanced": true
+    },
+    "threecx.rtpPortMin": {
+      "label": "RTP Port Range (Min)",
+      "help": "Minimum RTP port for media (default: 21000)",
+      "advanced": true
+    },
+    "threecx.rtpPortMax": {
+      "label": "RTP Port Range (Max)",
+      "help": "Maximum RTP port for media (default: 21100)",
+      "advanced": true
+    },
+    "threecx.externalIp": {
+      "label": "External IP Address",
+      "help": "Public IP for SIP Contact header (NAT traversal). Auto-detected if empty.",
+      "advanced": true
+    },
+    "threecx.freeswitchHost": {
+      "label": "FreeSWITCH ESL Host",
+      "help": "FreeSWITCH event socket host (default: 127.0.0.1)",
+      "advanced": true
+    },
+    "threecx.freeswitchPort": {
+      "label": "FreeSWITCH ESL Port",
+      "help": "FreeSWITCH event socket port (default: 8122)",
+      "advanced": true
+    },
+    "threecx.freeswitchSecret": {
+      "label": "FreeSWITCH ESL Secret",
+      "help": "FreeSWITCH event socket authentication secret",
+      "sensitive": true,
+      "advanced": true
+    },
+    "threecx.audioForkPort": {
+      "label": "Audio Fork Port",
+      "help": "WebSocket port for audio forking (default: 3001)",
+      "advanced": true
+    },
     "outbound.defaultMode": {
       "label": "Default Call Mode"
     },
@@ -113,6 +171,46 @@
     },
     "streaming.streamPath": {
       "label": "Media Stream Path",
+      "advanced": true
+    },
+    "streaming.silenceDurationMs": {
+      "label": "VAD Silence Duration (ms)",
+      "help": "How long silence must last before considering speech ended. Lower = faster turn-taking, higher = more tolerant of pauses.",
+      "advanced": true
+    },
+    "streaming.vadThreshold": {
+      "label": "VAD Sensitivity",
+      "help": "Voice activity detection threshold (0-1). Higher values require louder speech to trigger, reducing false positives.",
+      "advanced": true
+    },
+    "streaming.bargeInEnabled": {
+      "label": "Enable Barge-in",
+      "help": "Allow callers to interrupt the agent mid-speech. When disabled, TTS plays to completion.",
+      "advanced": false
+    },
+    "streaming.bargeInMinDurationMs": {
+      "label": "Barge-in Debounce (ms)",
+      "help": "Minimum sustained speech duration before interrupting TTS. Higher values prevent false triggers from background noise or coughs. Range: 0-2000ms.",
+      "advanced": true
+    },
+    "streaming.whisperMlxPython": {
+      "label": "Whisper MLX Python Path",
+      "help": "Path to Python binary with mlx_whisper installed (Apple Silicon local STT).",
+      "advanced": true
+    },
+    "streaming.whisperMlxModel": {
+      "label": "Whisper MLX Model",
+      "help": "Model name for Whisper MLX (e.g. mlx-community/whisper-large-v3-turbo).",
+      "advanced": true
+    },
+    "streaming.whisperMlxLanguage": {
+      "label": "Whisper MLX Language",
+      "help": "Language code for Whisper MLX (e.g. en).",
+      "advanced": true
+    },
+    "streaming.sttFallback": {
+      "label": "STT Fallback Provider",
+      "help": "Fallback STT provider if the primary fails.",
       "advanced": true
     },
     "tts.provider": {
@@ -258,11 +356,30 @@
           },
           "rtpPortMin": {
             "type": "number",
-            "default": 20000
+            "default": 21000
           },
           "rtpPortMax": {
             "type": "number",
-            "default": 20100
+            "default": 21100
+          },
+          "externalIp": {
+            "type": "string",
+            "minLength": 1
+          },
+          "freeswitchHost": {
+            "type": "string",
+            "default": "127.0.0.1"
+          },
+          "freeswitchPort": {
+            "type": "number",
+            "default": 8122
+          },
+          "freeswitchSecret": {
+            "type": "string"
+          },
+          "audioForkPort": {
+            "type": "number",
+            "default": 3001
           }
         }
       },
@@ -379,12 +496,25 @@
           },
           "sttProvider": {
             "type": "string",
-            "enum": ["openai-realtime"]
+            "enum": ["whisper-mlx", "openai-realtime", "openai"]
+          },
+          "sttFallback": {
+            "type": "string",
+            "enum": ["openai-realtime", "openai", "whisper-mlx", "none"]
           },
           "openaiApiKey": {
             "type": "string"
           },
           "sttModel": {
+            "type": "string"
+          },
+          "whisperMlxModel": {
+            "type": "string"
+          },
+          "whisperMlxPython": {
+            "type": "string"
+          },
+          "whisperMlxLanguage": {
             "type": "string"
           },
           "silenceDurationMs": {
@@ -398,6 +528,14 @@
           },
           "streamPath": {
             "type": "string"
+          },
+          "bargeInEnabled": {
+            "type": "boolean"
+          },
+          "bargeInMinDurationMs": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 2000
           }
         }
       },
@@ -413,9 +551,16 @@
         "properties": {
           "provider": {
             "type": "string",
-            "enum": ["openai"]
+            "enum": ["whisper-mlx", "openai-realtime", "openai"]
           },
           "model": {
+            "type": "string"
+          },
+          "fallback": {
+            "type": "string",
+            "enum": ["openai-realtime", "openai", "whisper-mlx", "none"]
+          },
+          "fallbackModel": {
             "type": "string"
           }
         }
@@ -437,7 +582,7 @@
           },
           "provider": {
             "type": "string",
-            "enum": ["openai", "elevenlabs", "edge"]
+            "enum": ["openai", "elevenlabs", "edge", "custom"]
           },
           "summaryModel": {
             "type": "string"
@@ -576,6 +721,52 @@
               },
               "proxy": {
                 "type": "string"
+              },
+              "timeoutMs": {
+                "type": "integer",
+                "minimum": 1000,
+                "maximum": 120000
+              }
+            }
+          },
+          "custom": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "baseUrl": {
+                "type": "string"
+              },
+              "apiKey": {
+                "type": "string"
+              },
+              "voice": {
+                "type": "string"
+              },
+              "emotion": {
+                "type": "string"
+              },
+              "instruct": {
+                "type": "string"
+              },
+              "language": {
+                "type": "string"
+              },
+              "speed": {
+                "type": "number",
+                "minimum": 0.5,
+                "maximum": 2
+              },
+              "temperature": {
+                "type": "number",
+                "minimum": 0.1,
+                "maximum": 1.5
+              },
+              "streaming": {
+                "type": "boolean"
+              },
+              "voiceMode": {
+                "type": "string",
+                "enum": ["preset", "clone"]
               },
               "timeoutMs": {
                 "type": "integer",

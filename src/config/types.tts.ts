@@ -1,4 +1,4 @@
-export type TtsProvider = "elevenlabs" | "openai" | "edge";
+export type TtsProvider = "elevenlabs" | "openai" | "edge" | "custom";
 
 export type TtsMode = "final" | "all";
 
@@ -71,6 +71,40 @@ export type TtsConfig = {
     volume?: string;
     saveSubtitles?: boolean;
     proxy?: string;
+    timeoutMs?: number;
+  };
+  /** Custom/Generic TTS API configuration (e.g. Qwen3 Voice Studio). */
+  custom?: {
+    /** Base URL of the custom TTS API (default: http://localhost:8880). */
+    baseUrl?: string;
+    /** Optional API key (sent as X-API-Key header when set). */
+    apiKey?: string;
+    /**
+     * Voice name to use for synthesis.
+     * Preset voices use /v1/tts; custom/cloned voices use /v1/tts/clone.
+     */
+    voice?: string;
+    /**
+     * Emotion preset key (e.g. "empathetic", "happy", "calm").
+     * Resolved server-side to an instruct string via /v1/emotions.
+     */
+    emotion?: string;
+    /** Freeform style instruction (overrides emotion when both are set). */
+    instruct?: string;
+    /** Language code (default: "auto"). */
+    language?: string;
+    /** Speech speed multiplier (0.5-2.0, default: 1.0). */
+    speed?: number;
+    /** Generation temperature (0.1-1.5, default: 0.7). */
+    temperature?: number;
+    /** Enable streaming mode for lower time-to-first-audio (default: true). */
+    streaming?: boolean;
+    /**
+     * Voice mode: "preset" uses /v1/tts, "clone" uses /v1/tts/clone.
+     * Default: auto-detect (clone if voice is non-empty and not a known preset).
+     */
+    voiceMode?: "preset" | "clone";
+    /** API request timeout override (ms). */
     timeoutMs?: number;
   };
   /** Optional path for local TTS user preferences JSON. */
