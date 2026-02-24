@@ -59,6 +59,7 @@ function setup(config: Record<string, unknown>): Registered {
     logger: noopLogger,
     registerGatewayMethod: (method: string, handler: unknown) => methods.set(method, handler),
     registerTool: (tool: unknown) => tools.push(tool),
+    registerChannel: () => {},
     registerCli: () => {},
     registerService: () => {},
     resolvePath: (p: string) => p,
@@ -82,6 +83,7 @@ async function registerVoiceCallCli(program: Command) {
     logger: noopLogger,
     registerGatewayMethod: () => {},
     registerTool: () => {},
+    registerChannel: () => {},
     registerCli: (fn: (ctx: RegisterCliContext) => void) =>
       fn({
         program,

@@ -9,6 +9,7 @@ import {
   renameSync,
   unlinkSync,
 } from "node:fs";
+import { tmpdir } from "node:os";
 import path from "node:path";
 import type { ReplyPayload } from "../auto-reply/types.js";
 import { normalizeChannelId } from "../channels/plugins/index.js";
