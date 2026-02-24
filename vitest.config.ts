@@ -42,6 +42,7 @@ export default defineConfig({
       "extensions/**/*.test.ts",
       "test/format-error.test.ts",
       "ui/src/ui/views/usage-render-details.test.ts",
+      "ui/src/ui/controllers/agents.test.ts",
     ],
     setupFiles: ["test/setup.ts"],
     exclude: [

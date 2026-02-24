@@ -1,15 +1,38 @@
 import type { OpenClawConfig } from "../config/config.js";
 import type { ModelDefinitionConfig } from "../config/types.models.js";
+import { createSubsystemLogger } from "../logging/subsystem.js";
 import {
   DEFAULT_COPILOT_API_BASE_URL,
   resolveCopilotApiToken,
 } from "../providers/github-copilot-token.js";
+import {
+  KILOCODE_BASE_URL,
+  KILOCODE_DEFAULT_CONTEXT_WINDOW,
+  KILOCODE_DEFAULT_COST,
+  KILOCODE_DEFAULT_MAX_TOKENS,
+  KILOCODE_DEFAULT_MODEL_ID,
+  KILOCODE_DEFAULT_MODEL_NAME,
+} from "../providers/kilocode-shared.js";
 import { ensureAuthProfileStore, listProfilesForProvider } from "./auth-profiles.js";
 import { discoverBedrockModels } from "./bedrock-discovery.js";
+import {
+  buildBytePlusModelDefinition,
+  BYTEPLUS_BASE_URL,
+  BYTEPLUS_MODEL_CATALOG,
+  BYTEPLUS_CODING_BASE_URL,
+  BYTEPLUS_CODING_MODEL_CATALOG,
+} from "./byteplus-models.js";
 import {
   buildCloudflareAiGatewayModelDefinition,
   resolveCloudflareAiGatewayBaseUrl,
 } from "./cloudflare-ai-gateway.js";
+import {
+  buildDoubaoModelDefinition,
+  DOUBAO_BASE_URL,
+  DOUBAO_MODEL_CATALOG,
+  DOUBAO_CODING_BASE_URL,
+  DOUBAO_CODING_MODEL_CATALOG,
+} from "./doubao-models.js";
 import {
   discoverHuggingfaceModels,
   HUGGINGFACE_BASE_URL,
@@ -39,12 +62,12 @@ const MINIMAX_DEFAULT_VISION_MODEL_ID = "MiniMax-VL-01";
 const MINIMAX_DEFAULT_CONTEXT_WINDOW = 200000;
 const MINIMAX_DEFAULT_MAX_TOKENS = 8192;
 const MINIMAX_OAUTH_PLACEHOLDER = "minimax-oauth";
-// Pricing: MiniMax doesn't publish public rates. Override in models.json for accurate costs.
+// Pricing per 1M tokens (USD) — https://platform.minimaxi.com/document/Price
 const MINIMAX_API_COST = {
-  input: 15,
-  output: 60,
-  cacheRead: 2,
-  cacheWrite: 10,
+  input: 0.3,
+  output: 1.2,
+  cacheRead: 0.03,
+  cacheWrite: 0.12,
 };
 
 type ProviderModelConfig = NonNullable<ProviderConfig["models"]>[number];
@@ -96,11 +119,11 @@ const MOONSHOT_DEFAULT_COST = {
   cacheWrite: 0,
 };
 
-const NVIDIA_BASE_URL = "https://integrate.api.nvidia.com/v1";
-const NVIDIA_DEFAULT_MODEL_ID = "moonshotai/kimi-k2.5";
-const NVIDIA_DEFAULT_CONTEXT_WINDOW = 256000;
-const NVIDIA_DEFAULT_MAX_TOKENS = 16384;
-const NVIDIA_DEFAULT_COST = {
+const KIMI_CODING_BASE_URL = "https://api.kimi.com/coding/";
+const KIMI_CODING_DEFAULT_MODEL_ID = "k2p5";
+const KIMI_CODING_DEFAULT_CONTEXT_WINDOW = 262144;
+const KIMI_CODING_DEFAULT_MAX_TOKENS = 32768;
+const KIMI_CODING_DEFAULT_COST = {
   input: 0,
   output: 0,
   cacheRead: 0,
@@ -129,6 +152,17 @@ const OLLAMA_DEFAULT_COST = {
   cacheWrite: 0,
 };
 
+const OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1";
+const OPENROUTER_DEFAULT_MODEL_ID = "auto";
+const OPENROUTER_DEFAULT_CONTEXT_WINDOW = 200000;
+const OPENROUTER_DEFAULT_MAX_TOKENS = 8192;
+const OPENROUTER_DEFAULT_COST = {
+  input: 0,
+  output: 0,
+  cacheRead: 0,
+  cacheWrite: 0,
+};
+
 const VLLM_BASE_URL = "http://127.0.0.1:8000/v1";
 const VLLM_DEFAULT_CONTEXT_WINDOW = 128000;
 const VLLM_DEFAULT_MAX_TOKENS = 8192;
@@ -149,6 +183,19 @@ const QIANFAN_DEFAULT_COST = {
   cacheRead: 0,
   cacheWrite: 0,
 };
+
+const NVIDIA_BASE_URL = "https://integrate.api.nvidia.com/v1";
+const NVIDIA_DEFAULT_MODEL_ID = "nvidia/llama-3.1-nemotron-70b-instruct";
+const NVIDIA_DEFAULT_CONTEXT_WINDOW = 131072;
+const NVIDIA_DEFAULT_MAX_TOKENS = 4096;
+const NVIDIA_DEFAULT_COST = {
+  input: 0,
+  output: 0,
+  cacheRead: 0,
+  cacheWrite: 0,
+};
+
+const log = createSubsystemLogger("agents/model-providers");
 
 interface OllamaModel {
   name: string;
@@ -199,12 +246,12 @@ async function discoverOllamaModels(baseUrl?: string): Promise<ModelDefinitionCo
       signal: AbortSignal.timeout(5000),
     });
     if (!response.ok) {
-      console.warn(`Failed to discover Ollama models: ${response.status}`);
+      log.warn(`Failed to discover Ollama models: ${response.status}`);
       return [];
     }
     const data = (await response.json()) as OllamaTagsResponse;
     if (!data.models || data.models.length === 0) {
-      console.warn("No Ollama models found on local instance");
+      log.warn("No Ollama models found on local instance");
       return [];
     }
     return data.models.map((model) => {
@@ -222,7 +269,7 @@ async function discoverOllamaModels(baseUrl?: string): Promise<ModelDefinitionCo
       };
     });
   } catch (error) {
-    console.warn(`Failed to discover Ollama models: ${String(error)}`);
+    log.warn(`Failed to discover Ollama models: ${String(error)}`);
     return [];
   }
 }
@@ -246,13 +293,13 @@ async function discoverVllmModels(
       signal: AbortSignal.timeout(5000),
     });
     if (!response.ok) {
-      console.warn(`Failed to discover vLLM models: ${response.status}`);
+      log.warn(`Failed to discover vLLM models: ${response.status}`);
       return [];
     }
     const data = (await response.json()) as VllmModelsResponse;
     const models = data.data ?? [];
     if (models.length === 0) {
-      console.warn("No vLLM models found on local instance");
+      log.warn("No vLLM models found on local instance");
       return [];
     }
 
@@ -275,7 +322,7 @@ async function discoverVllmModels(
         } satisfies ModelDefinitionConfig;
       });
   } catch (error) {
-    console.warn(`Failed to discover vLLM models: ${String(error)}`);
+    log.warn(`Failed to discover vLLM models: ${String(error)}`);
     return [];
   }
 }
@@ -473,7 +520,7 @@ function buildMoonshotProvider(): ProviderConfig {
       {
         id: MOONSHOT_DEFAULT_MODEL_ID,
         name: "Kimi K2.5",
-        reasoning: true, // Supports thinking mode
+        reasoning: false,
         input: ["text", "image"],
         cost: MOONSHOT_DEFAULT_COST,
         contextWindow: MOONSHOT_DEFAULT_CONTEXT_WINDOW,
@@ -483,19 +530,19 @@ function buildMoonshotProvider(): ProviderConfig {
   };
 }
 
-function buildNvidiaProvider(): ProviderConfig {
+export function buildKimiCodingProvider(): ProviderConfig {
   return {
-    baseUrl: NVIDIA_BASE_URL,
-    api: "openai-completions",
+    baseUrl: KIMI_CODING_BASE_URL,
+    api: "anthropic-messages",
     models: [
       {
-        id: NVIDIA_DEFAULT_MODEL_ID,
-        name: "NVIDIA Kimi K2.5",
-        reasoning: true, // Supports thinking mode via chat_template_kwargs
+        id: KIMI_CODING_DEFAULT_MODEL_ID,
+        name: "Kimi for Coding",
+        reasoning: true,
         input: ["text", "image"],
-        cost: NVIDIA_DEFAULT_COST,
-        contextWindow: NVIDIA_DEFAULT_CONTEXT_WINDOW,
-        maxTokens: NVIDIA_DEFAULT_MAX_TOKENS,
+        cost: KIMI_CODING_DEFAULT_COST,
+        contextWindow: KIMI_CODING_DEFAULT_CONTEXT_WINDOW,
+        maxTokens: KIMI_CODING_DEFAULT_MAX_TOKENS,
       },
     ],
   };
@@ -533,6 +580,38 @@ function buildSyntheticProvider(): ProviderConfig {
     baseUrl: SYNTHETIC_BASE_URL,
     api: "anthropic-messages",
     models: SYNTHETIC_MODEL_CATALOG.map(buildSyntheticModelDefinition),
+  };
+}
+
+function buildDoubaoProvider(): ProviderConfig {
+  return {
+    baseUrl: DOUBAO_BASE_URL,
+    api: "openai-completions",
+    models: DOUBAO_MODEL_CATALOG.map(buildDoubaoModelDefinition),
+  };
+}
+
+function buildDoubaoCodingProvider(): ProviderConfig {
+  return {
+    baseUrl: DOUBAO_CODING_BASE_URL,
+    api: "openai-completions",
+    models: DOUBAO_CODING_MODEL_CATALOG.map(buildDoubaoModelDefinition),
+  };
+}
+
+function buildBytePlusProvider(): ProviderConfig {
+  return {
+    baseUrl: BYTEPLUS_BASE_URL,
+    api: "openai-completions",
+    models: BYTEPLUS_MODEL_CATALOG.map(buildBytePlusModelDefinition),
+  };
+}
+
+function buildBytePlusCodingProvider(): ProviderConfig {
+  return {
+    baseUrl: BYTEPLUS_CODING_BASE_URL,
+    api: "openai-completions",
+    models: BYTEPLUS_CODING_MODEL_CATALOG.map(buildBytePlusModelDefinition),
   };
 }
 
@@ -599,6 +678,24 @@ function buildTogetherProvider(): ProviderConfig {
   };
 }
 
+function buildOpenrouterProvider(): ProviderConfig {
+  return {
+    baseUrl: OPENROUTER_BASE_URL,
+    api: "openai-completions",
+    models: [
+      {
+        id: OPENROUTER_DEFAULT_MODEL_ID,
+        name: "OpenRouter Auto",
+        reasoning: false,
+        input: ["text", "image"],
+        cost: OPENROUTER_DEFAULT_COST,
+        contextWindow: OPENROUTER_DEFAULT_CONTEXT_WINDOW,
+        maxTokens: OPENROUTER_DEFAULT_MAX_TOKENS,
+      },
+    ],
+  };
+}
+
 async function buildVllmProvider(params?: {
   baseUrl?: string;
   apiKey?: string;
@@ -611,6 +708,7 @@ async function buildVllmProvider(params?: {
     models,
   };
 }
+
 export function buildQianfanProvider(): ProviderConfig {
   return {
     baseUrl: QIANFAN_BASE_URL,
@@ -633,6 +731,69 @@ export function buildQianfanProvider(): ProviderConfig {
         cost: QIANFAN_DEFAULT_COST,
         contextWindow: 119000,
         maxTokens: 64000,
+      },
+    ],
+  };
+}
+
+export function buildNvidiaProvider(): ProviderConfig {
+  return {
+    baseUrl: NVIDIA_BASE_URL,
+    api: "openai-completions",
+    models: [
+      {
+        id: NVIDIA_DEFAULT_MODEL_ID,
+        name: "NVIDIA Llama 3.1 Nemotron 70B Instruct",
+        reasoning: false,
+        input: ["text"],
+        cost: NVIDIA_DEFAULT_COST,
+        contextWindow: NVIDIA_DEFAULT_CONTEXT_WINDOW,
+        maxTokens: NVIDIA_DEFAULT_MAX_TOKENS,
+      },
+      {
+        id: "meta/llama-3.3-70b-instruct",
+        name: "Meta Llama 3.3 70B Instruct",
+        reasoning: false,
+        input: ["text"],
+        cost: NVIDIA_DEFAULT_COST,
+        contextWindow: 131072,
+        maxTokens: 4096,
+      },
+      {
+        id: "nvidia/mistral-nemo-minitron-8b-8k-instruct",
+        name: "NVIDIA Mistral NeMo Minitron 8B Instruct",
+        reasoning: false,
+        input: ["text"],
+        cost: NVIDIA_DEFAULT_COST,
+        contextWindow: 8192,
+        maxTokens: 2048,
+      },
+      {
+        id: "moonshotai/kimi-k2.5",
+        name: "NVIDIA Kimi K2.5",
+        reasoning: true,
+        input: ["text", "image"],
+        cost: NVIDIA_DEFAULT_COST,
+        contextWindow: 256000,
+        maxTokens: 16384,
+      },
+    ],
+  };
+}
+
+export function buildKilocodeProvider(): ProviderConfig {
+  return {
+    baseUrl: KILOCODE_BASE_URL,
+    api: "openai-completions",
+    models: [
+      {
+        id: KILOCODE_DEFAULT_MODEL_ID,
+        name: KILOCODE_DEFAULT_MODEL_NAME,
+        reasoning: true,
+        input: ["text", "image"],
+        cost: KILOCODE_DEFAULT_COST,
+        contextWindow: KILOCODE_DEFAULT_CONTEXT_WINDOW,
+        maxTokens: KILOCODE_DEFAULT_MAX_TOKENS,
       },
     ],
   };
@@ -669,11 +830,11 @@ export async function resolveImplicitProviders(params: {
     providers.moonshot = { ...buildMoonshotProvider(), apiKey: moonshotKey };
   }
 
-  const nvidiaKey =
-    resolveEnvApiKeyVarName("nvidia") ??
-    resolveApiKeyFromProfiles({ provider: "nvidia", store: authStore });
-  if (nvidiaKey) {
-    providers.nvidia = { ...buildNvidiaProvider(), apiKey: nvidiaKey };
+  const kimiCodingKey =
+    resolveEnvApiKeyVarName("kimi-coding") ??
+    resolveApiKeyFromProfiles({ provider: "kimi-coding", store: authStore });
+  if (kimiCodingKey) {
+    providers["kimi-coding"] = { ...buildKimiCodingProvider(), apiKey: kimiCodingKey };
   }
 
   const syntheticKey =
@@ -695,6 +856,28 @@ export async function resolveImplicitProviders(params: {
     providers["qwen-portal"] = {
       ...buildQwenPortalProvider(),
       apiKey: QWEN_PORTAL_OAUTH_PLACEHOLDER,
+    };
+  }
+
+  const volcengineKey =
+    resolveEnvApiKeyVarName("volcengine") ??
+    resolveApiKeyFromProfiles({ provider: "volcengine", store: authStore });
+  if (volcengineKey) {
+    providers.volcengine = { ...buildDoubaoProvider(), apiKey: volcengineKey };
+    providers["volcengine-plan"] = {
+      ...buildDoubaoCodingProvider(),
+      apiKey: volcengineKey,
+    };
+  }
+
+  const byteplusKey =
+    resolveEnvApiKeyVarName("byteplus") ??
+    resolveApiKeyFromProfiles({ provider: "byteplus", store: authStore });
+  if (byteplusKey) {
+    providers.byteplus = { ...buildBytePlusProvider(), apiKey: byteplusKey };
+    providers["byteplus-plan"] = {
+      ...buildBytePlusCodingProvider(),
+      apiKey: byteplusKey,
     };
   }
 
@@ -787,6 +970,27 @@ export async function resolveImplicitProviders(params: {
     resolveApiKeyFromProfiles({ provider: "qianfan", store: authStore });
   if (qianfanKey) {
     providers.qianfan = { ...buildQianfanProvider(), apiKey: qianfanKey };
+  }
+
+  const openrouterKey =
+    resolveEnvApiKeyVarName("openrouter") ??
+    resolveApiKeyFromProfiles({ provider: "openrouter", store: authStore });
+  if (openrouterKey) {
+    providers.openrouter = { ...buildOpenrouterProvider(), apiKey: openrouterKey };
+  }
+
+  const nvidiaKey =
+    resolveEnvApiKeyVarName("nvidia") ??
+    resolveApiKeyFromProfiles({ provider: "nvidia", store: authStore });
+  if (nvidiaKey) {
+    providers.nvidia = { ...buildNvidiaProvider(), apiKey: nvidiaKey };
+  }
+
+  const kilocodeKey =
+    resolveEnvApiKeyVarName("kilocode") ??
+    resolveApiKeyFromProfiles({ provider: "kilocode", store: authStore });
+  if (kilocodeKey) {
+    providers.kilocode = { ...buildKilocodeProvider(), apiKey: kilocodeKey };
   }
 
   return providers;

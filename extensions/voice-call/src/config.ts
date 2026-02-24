@@ -319,6 +319,17 @@ export const VoiceCallStreamingConfigSchema = z
     bargeInEnabled: z.boolean().default(true),
     /** Minimum speech duration (ms) before triggering barge-in to avoid false positives */
     bargeInMinDurationMs: z.number().int().min(0).max(2000).default(300),
+    /**
+     * Close unauthenticated media stream sockets if no valid `start` frame arrives in time.
+     * Protects against pre-auth idle connection hold attacks.
+     */
+    preStartTimeoutMs: z.number().int().positive().default(5000),
+    /** Maximum number of concurrently pending (pre-start) media stream sockets. */
+    maxPendingConnections: z.number().int().positive().default(32),
+    /** Maximum pending media stream sockets per source IP. */
+    maxPendingConnectionsPerIp: z.number().int().positive().default(4),
+    /** Hard cap for all open media stream sockets (pending + active). */
+    maxConnections: z.number().int().positive().default(128),
   })
   .strict()
   .default({
@@ -332,6 +343,10 @@ export const VoiceCallStreamingConfigSchema = z
     streamPath: "/voice/stream",
     bargeInEnabled: true,
     bargeInMinDurationMs: 300,
+    preStartTimeoutMs: 5000,
+    maxPendingConnections: 32,
+    maxPendingConnectionsPerIp: 4,
+    maxConnections: 128,
   });
 export type VoiceCallStreamingConfig = z.infer<typeof VoiceCallStreamingConfigSchema>;
 
