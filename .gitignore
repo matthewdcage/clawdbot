@@ -107,6 +107,11 @@ apps/ios/LocalSigning.xcconfig
 .cursor/
 archived/
 
+# Xcode build directories (xcodebuild output)
+apps/ios/build/
+apps/shared/OpenClawKit/build/
+Swabble/build/
+
 # Generated protocol schema (produced via pnpm protocol:gen)
 dist/protocol.schema.json
 .ant-colony/
