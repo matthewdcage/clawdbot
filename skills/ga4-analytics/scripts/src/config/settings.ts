@@ -2,8 +2,8 @@
  * Settings Module - Environment configuration for GA4 API
  */
 
-import { config } from "dotenv";
 import { join } from "path";
+import { config } from "dotenv";
 
 // Load .env file from current working directory
 config();

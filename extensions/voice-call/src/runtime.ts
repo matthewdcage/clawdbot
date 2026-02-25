@@ -4,16 +4,16 @@ import type { CoreConfig } from "./core-bridge.js";
 import { loadCoreAgentDeps } from "./core-bridge.js";
 import { CallManager } from "./manager.js";
 import type { VoiceCallProvider } from "./providers/base.js";
-import type { STTProvider } from "./providers/stt-base.js";
-import type { TelephonyTtsRuntime } from "./telephony-tts.js";
-import type { NormalizedEvent } from "./types.js";
 import { MockProvider } from "./providers/mock.js";
 import { PlivoProvider } from "./providers/plivo.js";
+import type { STTProvider } from "./providers/stt-base.js";
 import { TelnyxProvider } from "./providers/telnyx.js";
 import { ThreeCXProvider } from "./providers/threecx.js";
 import { TwilioProvider } from "./providers/twilio.js";
+import type { TelephonyTtsRuntime } from "./telephony-tts.js";
 import { createTelephonyTtsProvider } from "./telephony-tts.js";
 import { startTunnel, type TunnelResult } from "./tunnel.js";
+import type { NormalizedEvent } from "./types.js";
 import {
   cleanupTailscaleExposure,
   setupTailscaleExposure,

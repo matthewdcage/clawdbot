@@ -5,10 +5,10 @@
  * for a list of specific URLs, similar to a bulk URL lookup field.
  */
 
-import type { ReportResponse, DateRange } from "./reports.js";
 import { getSettings } from "../config/settings.js";
 import { getClient, getPropertyId } from "../core/client.js";
 import { saveResult } from "../core/storage.js";
+import type { ReportResponse, DateRange } from "./reports.js";
 
 /**
  * Options for bulk URL lookup

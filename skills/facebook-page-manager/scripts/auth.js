@@ -4,11 +4,11 @@
  * Manual code flow - user copies redirect URL containing code
  */
 
-import { config } from "dotenv";
 import { readFileSync, writeFileSync, chmodSync, existsSync } from "fs";
 import { dirname, join } from "path";
 import { createInterface } from "readline";
 import { fileURLToPath } from "url";
+import { config } from "dotenv";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const SKILL_DIR = join(__dirname, "..");

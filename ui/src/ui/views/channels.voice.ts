@@ -1,8 +1,8 @@
 import { html, nothing } from "lit";
-import type { VoiceStatus } from "../types.ts";
-import type { ChannelsProps } from "./channels.types.ts";
 import { formatRelativeTimestamp } from "../format.ts";
+import type { VoiceStatus } from "../types.ts";
 import { renderChannelConfigSection } from "./channels.config.ts";
+import type { ChannelsProps } from "./channels.types.ts";
 
 export function renderVoiceCard(params: {
   props: ChannelsProps;

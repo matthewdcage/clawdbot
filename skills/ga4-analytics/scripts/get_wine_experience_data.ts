@@ -1,5 +1,5 @@
-import dotenv from "dotenv";
 import path from "path";
+import dotenv from "dotenv";
 import { authenticate } from "./src/config/auth";
 import { runReport } from "./src/core/ga4-reporting";
 

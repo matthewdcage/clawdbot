@@ -5,11 +5,11 @@
  */
 
 import { Blob } from "buffer";
-import { program } from "commander";
-import { config } from "dotenv";
 import { readFileSync, existsSync } from "fs";
 import { dirname, join, basename } from "path";
 import { fileURLToPath } from "url";
+import { program } from "commander";
+import { config } from "dotenv";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const SKILL_DIR = join(__dirname, "..");
